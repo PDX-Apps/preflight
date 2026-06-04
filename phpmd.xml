@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<ruleset name="Preflight"
+    xmlns="http://pmd.sf.net/ruleset/1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+    xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+
+    <description>
+        Mess-detection rules kept to the ones that signal real problems. The opinionated
+        rules that fight modern idioms (static factory methods, intentional boolean flags,
+        short closure variables) are excluded.
+    </description>
+
+    <!-- Real complexity signals; keep, they catch genuinely tangled methods. -->
+    <rule ref="rulesets/codesize.xml">
+        <!-- Immutable config DTOs legitimately carry one constructor param per setting. -->
+        <exclude name="ExcessiveParameterList" />
+    </rule>
+
+    <!-- Dead code is worth knowing about. -->
+    <rule ref="rulesets/unusedcode.xml" />
+
+    <!-- Clean-code rules, minus the dogmatic ones. -->
+    <rule ref="rulesets/cleancode.xml">
+        <!-- Named constructors / value-object factories are a deliberate pattern here. -->
+        <exclude name="StaticAccess" />
+        <!-- Boolean flags (fixable, failFast, dirty, isTty) are intentional and clear. -->
+        <exclude name="BooleanArgumentFlag" />
+        <!-- Guard-clause assignments and occasional else are fine. -->
+        <exclude name="ElseExpression" />
+        <exclude name="IfStatementAssignment" />
+        <!-- Fires on global built-in attributes like \Override (which Rector writes FQN). -->
+        <exclude name="MissingImport" />
+    </rule>
+
+    <!-- Naming rules, minus the short-variable nag (closures use $a/$s/$f deliberately). -->
+    <rule ref="rulesets/naming.xml">
+        <exclude name="ShortVariable" />
+        <exclude name="LongVariable" />
+    </rule>
+
+    <!--
+        'controversial' (CamelCase* etc.) and 'design' (CouplingBetweenObjects,
+        NumberOfChildren) are intentionally omitted — too opinionated for this codebase.
+    -->
+</ruleset>

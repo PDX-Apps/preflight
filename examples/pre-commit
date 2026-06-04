@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Preflight pre-commit hook — checks only the files you're committing, so it's fast.
+#
+# Install:
+#   cp examples/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# It runs Preflight scoped to staged changes and fails the commit on any finding.
+# Tip: run `vendor/bin/preflight --fix --dirty` to auto-fix before committing.
+
+set -euo pipefail
+
+# --dirty scopes to working-tree changes (staged + unstaged + untracked).
+# --fail-fast stops at the first failing step for a snappier hook.
+vendor/bin/preflight --dirty --fail-fast --format=human

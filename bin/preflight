@@ -1,0 +1,49 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Locate the Composer autoloader whether this package is the root project or installed
+// as a dependency under vendor/pdxapps/preflight.
+$autoloads = [
+    __DIR__ . '/../vendor/autoload.php',        // standalone (this repo)
+    __DIR__ . '/../../../autoload.php',          // installed: vendor/pdxapps/preflight/bin
+    __DIR__ . '/../../../../vendor/autoload.php', // installed, alternate layout
+];
+
+$loaded = false;
+foreach ($autoloads as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        $loaded = true;
+        break;
+    }
+}
+
+if (! $loaded) {
+    fwrite(STDERR, "Preflight: could not find the Composer autoloader. Run 'composer install' first.\n");
+    exit(1);
+}
+
+use PdxApps\Preflight\Console\Application;
+use Symfony\Component\Console\Input\ArgvInput;
+
+$application = new Application();
+
+// Let `preflight <path> ...` work: if the first non-option argument is not a registered
+// command, it's a path to scope to, so run the default command. Done here against raw
+// $argv (not a stringified input) so paths containing spaces survive intact.
+$argv = $_SERVER['argv'] ?? [];
+$firstArgument = null;
+foreach (array_slice($argv, 1) as $token) {
+    if ($token === '' || $token[0] !== '-') {
+        $firstArgument = $token;
+        break;
+    }
+}
+
+if ($firstArgument !== null && ! $application->isKnownCommand($firstArgument)) {
+    array_splice($argv, 1, 0, [Application::DEFAULT_COMMAND]);
+}
+
+exit($application->run(new ArgvInput($argv)));

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="/project/phpunit.xml" tests="2" assertions="3" errors="0" failures="0" skipped="0" time="0.01">
+    <testsuite name="t" tests="2" assertions="3" errors="0" failures="0" skipped="0" time="0.01">
+      <testsuite name="SampleTest" file="/project/tests/SampleTest.php" tests="2" assertions="3" errors="0" failures="0" skipped="0" time="0.01">
+        <testcase name="test_a" file="/project/tests/SampleTest.php" line="4" class="SampleTest" assertions="2" time="0.005"/>
+        <testcase name="test_b" file="/project/tests/SampleTest.php" line="9" class="SampleTest" assertions="1" time="0.005"/>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

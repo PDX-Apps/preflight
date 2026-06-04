@@ -1,0 +1,1 @@
+{"tool":"pint","result":"fixed","files":[{"path":"app\/Other.php","fixers":["blank_line_after_opening_tag","no_singleline_whitespace_before_semicolons","binary_operator_spaces"]},{"path":"app\/Http\/Messy.php","fixers":["blank_line_after_opening_tag","no_singleline_whitespace_before_semicolons","statement_indentation","binary_operator_spaces"]}]}

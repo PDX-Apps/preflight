@@ -1,0 +1,13 @@
+
+PHPCBF RESULT SUMMARY
+----------------------------------------------------------------------
+FILE                                                  FIXED  REMAINING
+----------------------------------------------------------------------
+/project/src/Config/ConfigLoader.php                  4      0
+/project/src/Render/HumanRenderer.php                 8      1
+/project/src/Steps/Pint.php                           2      0
+----------------------------------------------------------------------
+A TOTAL OF 14 ERRORS WERE FIXED IN 3 FILES
+----------------------------------------------------------------------
+
+Time: 1.26 secs; Memory: 10MB

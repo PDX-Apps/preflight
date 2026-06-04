@@ -1,0 +1,58 @@
+# Preflight on GitHub Actions.
+#
+# Copy to .github/workflows/preflight.yml in your project. Runs every installed
+# quality tool on pull requests and pushes, failing the build on any finding.
+name: Preflight
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Run all checks. --format=github emits ::error annotations that appear
+      # inline on the PR diff; the exit code fails the job on any finding.
+      # --report also writes a JSON artifact to upload below.
+      - name: Run Preflight
+        run: vendor/bin/preflight --format=github --report=preflight-report.json
+
+      # Optional: keep the JSON report even when the run fails.
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preflight-report
+          path: preflight-report.json
+
+  # Optional: a faster PR-only job that checks just the changed files.
+  preflight-changed:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed so --since can diff against the base branch
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Preflight (changed files only)
+        run: vendor/bin/preflight --since=origin/${{ github.base_ref }} --format=github

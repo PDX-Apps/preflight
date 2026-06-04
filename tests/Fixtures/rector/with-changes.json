@@ -1,0 +1,26 @@
+{
+  "totals": {
+    "changed_files": 2,
+    "errors": 0
+  },
+  "file_diffs": [
+    {
+      "file": "src/Parsing/PintParser.php",
+      "diff": "--- Original\n+++ New\n@@ -96,7 +96,7 @@\n             return 'Code style issues found.';\n         }\n \n-        return 'Code style issues found: '.implode(', ', array_map('strval', $fixers)).'.';\n+        return 'Code style issues found: '.implode(', ', array_map(strval(...), $fixers)).'.';\n     }\n \n     private function fallback(ProcessResult $result): ParseResult\n",
+      "applied_rectors": [
+        "Rector\\CodingStyle\\Rector\\FuncCall\\FunctionFirstClassCallableRector"
+      ]
+    },
+    {
+      "file": "src/Preflight.php",
+      "diff": "--- Original\n+++ New\n@@ -22,13 +22,13 @@\n  * `Preflight::make($config)->run(Mode::Check)`. The console commands are thin shells over\n  * this same runner.\n  */\n-final class Preflight\n+final readonly class Preflight\n {\n     private function __construct(\n-        private readonly Configuration $configuration,\n-        private readonly string $projectRoot,\n-        private readonly ProcessExecutor $executor,\n-        private readonly StepRegistry $registry,\n+        private Configuration $configuration,\n+        private string $projectRoot,\n+        private ProcessExecutor $executor,\n+        private StepRegistry $registry,\n     ) {\n     }\n \n",
+      "applied_rectors": [
+        "Rector\\Php82\\Rector\\Class_\\ReadOnlyClassRector"
+      ]
+    }
+  ],
+  "changed_files": [
+    "src/Parsing/PintParser.php",
+    "src/Preflight.php"
+  ]
+}

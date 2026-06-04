@@ -1,0 +1,17 @@
+# Local planning / design notes — not part of the published package
+/_planning/
+
+# Dependencies
+/vendor/
+composer.lock
+
+# Tooling caches
+/.phpunit.cache/
+/.php-cs-fixer.cache
+.phpunit.result.cache
+.preflight.cache.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

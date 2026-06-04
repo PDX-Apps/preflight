@@ -1,0 +1,67 @@
+# Preflight's own CI — it runs itself on its own code (dogfooding).
+#
+# On pull requests this emits GitHub annotations inline on the diff (--format=github);
+# it also uploads a SARIF report to the Security tab to exercise that path. The build
+# fails if any check fails.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write # for the SARIF upload
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # so --since can diff against the base branch if needed
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Run every check. --format=github puts failures inline on the PR diff; the
+      # exit code fails the job. --report keeps a JSON artifact regardless of outcome.
+      - name: Preflight
+        run: php bin/preflight --format=github --report=preflight-report.json
+
+      - name: Upload run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preflight-report
+          path: preflight-report.json
+
+  # Optional: also publish findings to the Security tab as SARIF.
+  code-scanning:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Produce SARIF even when checks fail (so findings still reach the Security tab).
+      - name: Preflight (SARIF)
+        run: php bin/preflight --format=sarif > preflight.sarif || true
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: preflight.sarif

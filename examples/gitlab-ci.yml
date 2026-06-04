@@ -1,0 +1,21 @@
+# Preflight on GitLab CI.
+#
+# Add to your .gitlab-ci.yml (or include it). Runs every installed quality tool;
+# a non-zero exit fails the job.
+preflight:
+  image: php:8.4-cli
+  before_script:
+    - apt-get update && apt-get install -y git unzip
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - composer install --no-interaction --no-progress --prefer-dist
+  script:
+    # JSON to the console for the logs; --report archives a durable copy as an
+    # artifact (see below). The exit code is what fails the job.
+    - vendor/bin/preflight --format=json --report=preflight-report.json
+  artifacts:
+    when: always # keep the report even when the job fails
+    paths:
+      - preflight-report.json
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"

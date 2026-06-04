@@ -1,0 +1,8 @@
+{
+    "version": "@package_version@",
+    "package": "phpmd",
+    "files": [],
+    "errors": [
+        {"fileName": "/project/src/Foo.php", "message": "Unexpected token: ->, line: 40, col: 62, file: /project/src/Foo.php.\n#0 stacktrace line\n#1 more"}
+    ]
+}

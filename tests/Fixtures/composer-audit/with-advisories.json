@@ -1,0 +1,70 @@
+{
+    "advisories": {
+        "symfony/http-foundation": [
+            {
+                "advisoryId": "PKSA-y6py-qpv1-h52p",
+                "packageName": "symfony/http-foundation",
+                "affectedVersions": ">=6.4.0,<6.4.41|>=7.0.0,<7.1.0|>=7.1.0,<7.2.0|>=7.2.0,<7.3.0|>=7.3.0,<7.4.0|>=7.4.0,<7.4.13|>=8.0.0,<8.0.13",
+                "title": "CVE-2026-48736: IpUtils::PRIVATE_SUBNETS Omits IPv6 Transition Forms (6to4, NAT64, Teredo, IPv4-compatible): SSRF Bypass in NoPrivateNetworkHttpClient",
+                "cve": "CVE-2026-48736",
+                "link": "https://symfony.com/cve-2026-48736",
+                "reportedAt": "2026-05-26T08:00:00+00:00",
+                "sources": [
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "symfony/http-foundation/CVE-2026-48736.yaml"
+                    }
+                ],
+                "severity": null
+            }
+        ],
+        "symfony/http-kernel": [
+            {
+                "advisoryId": "PKSA-dw7n-x7f5-zf63",
+                "packageName": "symfony/http-kernel",
+                "affectedVersions": ">=7.4.0,<7.4.12|>=8.0.0,<8.0.12",
+                "title": "CVE-2026-45075: HEAD Request Bypasses methods: ['GET'] Filter in #[IsGranted] / #[IsSignatureValid] / #[IsCsrfTokenValid]",
+                "cve": "CVE-2026-45075",
+                "link": "https://symfony.com/cve-2026-45075",
+                "reportedAt": "2026-05-20T08:00:00+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-6439-2f28-8p8q"
+                    },
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "symfony/http-kernel/CVE-2026-45075.yaml"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ],
+        "symfony/mailer": [
+            {
+                "advisoryId": "PKSA-28rh-rzzn-djk4",
+                "packageName": "symfony/mailer",
+                "affectedVersions": ">=2.0.0,<3.0.0|>=7.4.0,<7.4.12|>=8.0.0,<8.0.12",
+                "title": "CVE-2026-45068: Argument Injection in SendmailTransport via Dash-Prefixed Recipient Address",
+                "cve": "CVE-2026-45068",
+                "link": "https://symfony.com/cve-2026-45068",
+                "reportedAt": "2026-05-20T08:00:00+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-xx3c-qf5g-hc39"
+                    },
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "symfony/mailer/CVE-2026-45068.yaml"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ]
+    },
+    "abandoned": {
+        "doctrine/annotations": null,
+        "swiftmailer/swiftmailer": "symfony/mailer"
+    }
+}

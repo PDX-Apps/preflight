@@ -1,0 +1,32 @@
+{
+    "Report": {
+        "Violations": 2,
+        "Skipped violations": 0,
+        "Uncovered": 0,
+        "Allowed": 0,
+        "Warnings": 0,
+        "Errors": 0
+    },
+    "files": {
+        "/project/src/Domain/Service.php": {
+            "messages": [
+                {
+                    "message": "App\\Domain\\Service must not depend on App\\Infra\\Db (Domain on Infra)",
+                    "line": 4,
+                    "type": "error"
+                }
+            ],
+            "violations": 1
+        },
+        "/project/src/Domain/Order.php": {
+            "messages": [
+                {
+                    "message": "App\\Domain\\Order must not depend on App\\Http\\Request (Domain on Http)",
+                    "line": 7,
+                    "type": "error"
+                }
+            ],
+            "violations": 1
+        }
+    }
+}

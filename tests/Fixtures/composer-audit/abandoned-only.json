@@ -1,0 +1,7 @@
+{
+    "advisories": [],
+    "abandoned": {
+        "doctrine/annotations": null,
+        "swiftmailer/swiftmailer": "symfony/mailer"
+    }
+}

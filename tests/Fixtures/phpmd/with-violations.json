@@ -1,0 +1,19 @@
+{
+    "version": "2.15.0",
+    "package": "phpmd",
+    "files": [
+        {
+            "file": "/project/src/Config/Configuration.php",
+            "violations": [
+                {"beginLine": 35, "endLine": 35, "class": "Configuration", "method": "__construct", "description": "The method __construct has a boolean flag argument $failFast.", "rule": "BooleanArgumentFlag", "ruleSet": "Clean Code Rules", "priority": 1},
+                {"beginLine": 78, "endLine": 95, "class": "Configuration", "method": "resolveSteps", "description": "The method resolveSteps() has a Cyclomatic Complexity of 11.", "rule": "CyclomaticComplexity", "ruleSet": "Code Size Rules", "priority": 3}
+            ]
+        },
+        {
+            "file": "/project/src/Steps/Pint.php",
+            "violations": [
+                {"beginLine": 50, "endLine": 50, "class": "Pint", "method": "plan", "description": "Avoid unused local variables such as $x.", "rule": "UnusedLocalVariable", "ruleSet": "Unused Code Rules", "priority": 3}
+            ]
+        }
+    ]
+}
