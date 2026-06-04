@@ -11,13 +11,14 @@ use PdxApps\Preflight\Severity;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Renders findings as a SARIF 2.1.0 document — the format GitHub code scanning (and other
- * tools) ingest, e.g. uploaded via `github/codeql-action/upload-sarif`.
+ * Renders a SARIF 2.1.0 document — the format GitHub code scanning (and other tools) ingest,
+ * e.g. uploaded via `github/codeql-action/upload-sarif`.
  *
- * Because Preflight aggregates several analysers, findings are grouped by their reporting
- * tool into one SARIF `run` per tool (each `run.tool.driver.name` is the analyser), which
- * keeps results attributed to the tool that produced them. A clean run emits an empty `runs`
- * array — still a valid SARIF document.
+ * Each step that actually ran becomes one SARIF `run` (`run.tool.driver.name` is the tool),
+ * with its findings as the run's `results`. A step that passed cleanly still emits a run with
+ * an empty `results` array — so a clean project still produces a non-empty `runs` list, which
+ * GitHub's SARIF upload requires (it rejects a document with zero runs). Skipped or
+ * not-installed steps produce no run.
  */
 final class SarifRenderer implements Renderer
 {
@@ -42,16 +43,15 @@ final class SarifRenderer implements Renderer
      */
     private function runs(RunResult $result): array
     {
-        $byTool = [];
-        foreach ($result->findings() as $finding) {
-            $byTool[$finding->tool][] = $finding;
-        }
-
         $runs = [];
-        foreach ($byTool as $tool => $findings) {
+        foreach ($result->steps as $step) {
+            if (! $step->status->didRun()) {
+                continue;
+            }
+
             $runs[] = [
-                'tool' => ['driver' => ['name' => $tool, 'informationUri' => self::INFORMATION_URI]],
-                'results' => array_map($this->result(...), $findings),
+                'tool' => ['driver' => ['name' => $step->name, 'informationUri' => self::INFORMATION_URI]],
+                'results' => array_map($this->result(...), $step->findings),
             ];
         }
 

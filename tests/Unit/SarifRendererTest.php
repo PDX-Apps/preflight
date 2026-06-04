@@ -36,11 +36,31 @@ final class SarifRendererTest extends TestCase
         $this->assertIsArray($sarif['runs']);
     }
 
-    public function test_a_clean_run_has_no_runs(): void
+    public function test_a_clean_run_still_emits_a_run_per_executed_tool_with_empty_results(): void
     {
-        $sarif = $this->render(new RunResult([StepResult::passed('pint', 'Pint', durationSeconds: 0.5)]));
+        // GitHub's SARIF upload rejects a document with zero runs, so a clean project must
+        // still produce a run per tool that ran — each with empty results.
+        $sarif = $this->render(new RunResult([
+            StepResult::passed('pint', 'Pint', durationSeconds: 0.5),
+            StepResult::passed('phpstan', 'PHPStan', durationSeconds: 1.0),
+        ]));
 
-        $this->assertSame([], $sarif['runs']);
+        $drivers = array_map(static fn (array $run): string => $run['tool']['driver']['name'], $sarif['runs']);
+        $this->assertSame(['pint', 'phpstan'], $drivers);
+        $this->assertSame([], $sarif['runs'][0]['results']);
+        $this->assertSame([], $sarif['runs'][1]['results']);
+    }
+
+    public function test_skipped_and_missing_tool_steps_produce_no_run(): void
+    {
+        $sarif = $this->render(new RunResult([
+            StepResult::passed('pint', 'Pint', durationSeconds: 0.5),
+            StepResult::skipped('composer-audit', 'Composer Audit', 'narrowed run'),
+            StepResult::missingTool('phpstan', 'PHPStan', 'not installed'),
+        ]));
+
+        $drivers = array_map(static fn (array $run): string => $run['tool']['driver']['name'], $sarif['runs']);
+        $this->assertSame(['pint'], $drivers, 'only the step that actually ran becomes a run');
     }
 
     public function test_a_finding_becomes_a_result_with_rule_level_message_and_location(): void
@@ -79,14 +99,11 @@ final class SarifRendererTest extends TestCase
         $this->assertSame(['error', 'warning', 'note'], $levels);
     }
 
-    public function test_findings_are_grouped_into_one_run_per_tool(): void
+    public function test_each_executed_step_becomes_its_own_run(): void
     {
-        $findings = [
-            new Finding('phpstan', Severity::Error, 'a', 'a.php', 1),
-            new Finding('psalm', Severity::Error, 'b', 'b.php', 2),
-        ];
         $sarif = $this->render(new RunResult([
-            StepResult::failed('analysis', 'Analysis', findings: $findings, durationSeconds: 1.0, exitCode: 1),
+            StepResult::failed('phpstan', 'PHPStan', findings: [new Finding('phpstan', Severity::Error, 'a', 'a.php', 1)], durationSeconds: 1.0, exitCode: 1),
+            StepResult::failed('psalm', 'Psalm', findings: [new Finding('psalm', Severity::Error, 'b', 'b.php', 2)], durationSeconds: 1.0, exitCode: 1),
         ]));
 
         $drivers = array_map(static fn (array $run): string => $run['tool']['driver']['name'], $sarif['runs']);
