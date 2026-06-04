@@ -1,0 +1,16 @@
+---
+description: Run Preflight to check and auto-fix PHP code quality after editing PHP files.
+globs: "**/*.php"
+alwaysApply: false
+---
+
+# Preflight
+
+After changing PHP files, verify your work with Preflight before reporting done:
+
+1. Auto-fix your changes: `vendor/bin/preflight --fix --dirty --format=agent`
+2. Re-check: `vendor/bin/preflight --dirty --format=agent`
+3. Fix every reported `file:line:col [tool] message`, then repeat step 2 until it exits `0`.
+
+The exit code is authoritative (`0` = clean, non-zero = findings remain). `--format=agent`
+prints errors only (no ANSI, no success noise); `--dirty` scopes the run to files you changed.

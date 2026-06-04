@@ -365,6 +365,7 @@ editing (each runs `preflight --fix --dirty --format=agent` in a loop until clea
 - [`codex/AGENTS.md`](examples/codex/AGENTS.md) — for OpenAI Codex (and the cross-tool
   `AGENTS.md` standard).
 - [`gemini/GEMINI.md`](examples/gemini/GEMINI.md) — for Gemini CLI.
+- [`cursor/`](examples/cursor/) — a `.cursor/rules/preflight.mdc` project rule for Cursor.
 
 Preflight's `agent` output format (failure-only, ANSI-free, one `file:line:col [tool]
 message` per finding, exit code as source of truth) is what makes this loop reliable.
