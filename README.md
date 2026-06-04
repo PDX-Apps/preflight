@@ -104,7 +104,7 @@ locations the tools already use.
 |---|---|
 | `--fix` | Apply fixes instead of only checking (fixable steps). |
 | `--check` | Force check-only — overrides a `fixByDefault()` config. |
-| `--format=<fmt>` | `auto` (default), `human`, `json`, `agent`, `github`, `sarif`. |
+| `--format=<fmt>` | `auto` (default), `human`, `json`, `agent`, `github`, `sarif`, `markdown`. |
 | `--fail-fast` | Stop at the first failing step. |
 | `--files=a.php,b.php` | Check only these files. |
 | `--dirty` | Check only working-tree changes (staged + unstaged + untracked). |
@@ -303,6 +303,8 @@ Reference it like any built-in: `->withSteps([..., ComposerValidate::class])`. I
 - **github** — `::error`/`::warning` workflow commands; findings appear inline on the PR diff.
 - **sarif** — SARIF 2.1.0 JSON, grouped into one run per tool. For GitHub code scanning
   (upload via `github/codeql-action/upload-sarif`) and other SARIF consumers.
+- **markdown** — a per-step summary table plus a findings list. Ideal for a GitHub Actions
+  job summary (`preflight --format=markdown >> "$GITHUB_STEP_SUMMARY"`).
 
 ## Reports
 

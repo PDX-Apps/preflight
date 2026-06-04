@@ -16,6 +16,7 @@ enum OutputFormat: string
     case Agent = 'agent';
     case Github = 'github';
     case Sarif = 'sarif';
+    case Markdown = 'markdown';
 
     /**
      * Resolve {@see Auto} against the output stream; any explicit format is unchanged.

@@ -54,7 +54,7 @@ final class RunCommand extends Command
             ->addArgument('paths', InputArgument::IS_ARRAY, 'Limit the run to these files or directories.')
             ->addOption('fix', null, InputOption::VALUE_NONE, 'Apply fixes instead of only checking.')
             ->addOption('check', null, InputOption::VALUE_NONE, 'Force check-only (overrides a fix-by-default config).')
-            ->addOption('format', 'f', InputOption::VALUE_REQUIRED, 'Output format: auto, human, json, agent, github, sarif.')
+            ->addOption('format', 'f', InputOption::VALUE_REQUIRED, 'Output format: auto, human, json, agent, github, sarif, markdown.')
             ->addOption('fail-fast', null, InputOption::VALUE_NONE, 'Stop at the first failing step.')
             ->addOption('files', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of files to check.')
             ->addOption('dirty', null, InputOption::VALUE_NONE, 'Only check files changed in the working tree.')

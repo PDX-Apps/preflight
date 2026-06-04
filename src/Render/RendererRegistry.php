@@ -27,6 +27,7 @@ final class RendererRegistry
             OutputFormat::Agent->value => new AgentRenderer(),
             OutputFormat::Github->value => new GithubRenderer(),
             OutputFormat::Sarif->value => new SarifRenderer(),
+            OutputFormat::Markdown->value => new MarkdownRenderer(),
         ];
     }
 
