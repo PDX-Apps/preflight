@@ -43,9 +43,8 @@ jobs:
           name: preflight-report
           path: preflight-report.json
 
-  # Optional: also publish findings to the Security tab as SARIF.
+  # Publish findings to the Security tab as SARIF — on main (baseline) and on PRs.
   code-scanning:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

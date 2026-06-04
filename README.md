@@ -298,7 +298,7 @@ Reference it like any built-in: `->withSteps([..., ComposerValidate::class])`. I
 
 - **human** — per-step `PASS`/`FAIL`/`SKIP` table with findings and a summary. Default on a TTY.
 - **agent** — failure-only, ANSI-free, one `file:line:col [tool] message` per finding. Default
-  when piped. Built for AI agents (see `examples/AGENTS.md-snippet.md`).
+  when piped. Built for AI agents (see the [agent integrations](#ci--agents) below).
 - **json** — `{success, steps[], findings[]}`; the machine/CI format.
 - **github** — `::error`/`::warning` workflow commands; findings appear inline on the PR diff.
 - **sarif** — SARIF 2.1.0 JSON, grouped into one run per tool. For GitHub code scanning
@@ -350,13 +350,24 @@ you don't run `init`, gitignore it yourself.
 
 ## CI & agents
 
-Ready-to-copy configs are in [`examples/`](examples/):
+Ready-to-copy configs are in [`examples/`](examples/).
 
+**CI:**
 - [`github-actions.yml`](examples/github-actions.yml) — full run + a changed-files-only PR job.
 - [`gitlab-ci.yml`](examples/gitlab-ci.yml)
 - [`pre-commit`](examples/pre-commit) — fast hook that checks only what you're committing.
-- [`AGENTS.md-snippet.md`](examples/AGENTS.md-snippet.md) — drop into your agent's
-  instructions file so it runs `preflight --fix --dirty --format=agent` and fixes its own work.
+
+**Coding agents** — drop these into your assistant so it self-checks and self-fixes after
+editing (each runs `preflight --fix --dirty --format=agent` in a loop until clean):
+- [`claude/`](examples/claude/) — a [`SKILL.md`](examples/claude/skills/preflight/SKILL.md),
+  a [subagent](examples/claude/agents/preflight.md), and a
+  [`CLAUDE.md`](examples/claude/CLAUDE.md) snippet for Claude Code.
+- [`codex/AGENTS.md`](examples/codex/AGENTS.md) — for OpenAI Codex (and the cross-tool
+  `AGENTS.md` standard).
+- [`gemini/GEMINI.md`](examples/gemini/GEMINI.md) — for Gemini CLI.
+
+Preflight's `agent` output format (failure-only, ANSI-free, one `file:line:col [tool]
+message` per finding, exit code as source of truth) is what makes this loop reliable.
 
 ## Programmatic API
 
