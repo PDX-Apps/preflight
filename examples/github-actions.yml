@@ -1,13 +1,18 @@
 # Preflight on GitHub Actions.
 #
-# Copy to .github/workflows/preflight.yml in your project. Runs every installed
-# quality tool on pull requests and pushes, failing the build on any finding.
+# Copy to .github/workflows/preflight.yml in your project. This showcases three
+# integrations — inline PR annotations, a job-summary table, and SARIF code scanning.
+# Each `preflight` invocation runs the checks, so trim to just the outputs you want.
 name: Preflight
 
 on:
   push:
     branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+  security-events: write # for the SARIF upload (code-scanning job)
 
 jobs:
   preflight:
@@ -24,19 +29,46 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      # Run all checks. --format=github emits ::error annotations that appear
-      # inline on the PR diff; the exit code fails the job on any finding.
-      # --report also writes a JSON artifact to upload below.
+      # --format=github puts failures inline on the PR diff; the exit code fails the job.
+      # --report writes a JSON artifact (uploaded below).
       - name: Run Preflight
         run: vendor/bin/preflight --format=github --report=preflight-report.json
 
-      # Optional: keep the JSON report even when the run fails.
+      # A per-step summary table on the run's summary page. This runs the checks again in
+      # markdown; if you'd rather not re-run, make this your only Preflight step.
+      - name: Job summary
+        if: always()
+        run: vendor/bin/preflight --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: preflight-report
           path: preflight-report.json
+
+  # Publish findings to the Security tab (Code scanning) as SARIF. Needs code scanning
+  # available — public repos have it; private repos need GitHub Advanced Security.
+  code-scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Produce SARIF even when checks fail, so findings still reach the Security tab.
+      - name: Preflight (SARIF)
+        run: vendor/bin/preflight --format=sarif > preflight.sarif || true
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: preflight.sarif
 
   # Optional: a faster PR-only job that checks just the changed files.
   preflight-changed:
