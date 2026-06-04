@@ -36,6 +36,11 @@ jobs:
       - name: Preflight
         run: php bin/preflight --format=github --report=preflight-report.json
 
+      # A per-step summary table on the run's Summary page.
+      - name: Job summary
+        if: always()
+        run: php bin/preflight --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload run report
         if: always()
         uses: actions/upload-artifact@v4
