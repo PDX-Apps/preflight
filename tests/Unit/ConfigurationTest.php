@@ -48,6 +48,31 @@ final class ConfigurationTest extends TestCase
         $this->assertNull($none->modules);
     }
 
+    public function test_with_fail_fast_returns_a_copy_with_fail_fast_flipped_and_the_rest_intact(): void
+    {
+        $base = new Configuration(
+            steps: [ConfigurableStep::make()],
+            skip: ['x'],
+            failFast: false,
+            defaultFormat: OutputFormat::Github,
+            paths: ['src'],
+            fixByDefault: true,
+            dirtyByDefault: true,
+        );
+
+        $flipped = $base->withFailFast(true);
+
+        $this->assertFalse($base->failFast, 'the original is untouched');
+        $this->assertTrue($flipped->failFast);
+        // Everything else is carried over unchanged.
+        $this->assertSame($base->steps, $flipped->steps);
+        $this->assertSame(['x'], $flipped->skip);
+        $this->assertSame(OutputFormat::Github, $flipped->defaultFormat);
+        $this->assertSame(['src'], $flipped->paths);
+        $this->assertTrue($flipped->fixByDefault);
+        $this->assertTrue($flipped->dirtyByDefault);
+    }
+
     public function test_resolve_steps_uses_the_explicit_list_when_present(): void
     {
         $a = ConfigurableStep::make();

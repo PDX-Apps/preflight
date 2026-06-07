@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PdxApps\Preflight\Tests\Unit;
 
 use PdxApps\Preflight\Context;
+use PdxApps\Preflight\Support\CoverageDriver;
 use PdxApps\Preflight\Support\Target;
 use PdxApps\Preflight\Support\TargetSet;
 use PdxApps\Preflight\Support\Tool;
@@ -26,6 +27,17 @@ final class ContextTest extends TestCase
         $project = new TempProject();
 
         $this->assertSame($project->root, $this->context($project->root)->projectRoot());
+    }
+
+    public function test_it_exposes_the_injected_coverage_driver_defaulting_to_none(): void
+    {
+        $project = new TempProject();
+
+        $this->assertNull($this->context($project->root)->coverageDriver());
+        $this->assertSame(
+            CoverageDriver::Pcov,
+            new Context($project->root, TargetSet::wholeProject(), CoverageDriver::Pcov)->coverageDriver(),
+        );
     }
 
     public function test_it_resolves_a_config_reference_against_the_root(): void
