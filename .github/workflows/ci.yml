@@ -76,3 +76,25 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: preflight.sarif
+
+  # PR-only: scope the run to the diff and dogfood the patch-coverage gate
+  # (preflight.php sets ->minPatchCoverage(90)), so a PR's changed lines must be tested.
+  preflight-changed:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # so --since can diff against the base branch
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: pcov # patch coverage needs a driver
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Preflight (changed lines)
+        run: php bin/preflight --since=origin/${{ github.base_ref }} --format=github

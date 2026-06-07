@@ -36,5 +36,6 @@ return Preflight::configure()
                 'clover' => 'build/coverage.xml', // for Codecov/Coveralls + the gate
                 'html' => 'build/coverage',       // browsable report, uploaded as an artifact
             ])
-            ->minCoverage(97), // ~97.5% line coverage; floor leaves a little headroom
+            ->minCoverage(97)      // ~97.5% line coverage; floor leaves a little headroom
+            ->minPatchCoverage(90), // changed lines on a --since/--dirty run must be 90% covered
     );
