@@ -62,6 +62,24 @@ final class SequentialRunnerTest extends TestCase
         $this->assertSame([$note], $result->steps[0]->findings);
     }
 
+    public function test_parser_metrics_are_carried_onto_the_step_result(): void
+    {
+        $executor = (new FakeProcessExecutor())->queueSuccess();
+        $runner = new SequentialRunner($executor);
+
+        $parser = new class () implements \PdxApps\Preflight\Contracts\OutputParser {
+            public function parse(\PdxApps\Preflight\Process\ProcessResult $result): \PdxApps\Preflight\Parsing\ParseResult
+            {
+                return new \PdxApps\Preflight\Parsing\ParseResult([], [], ['patch coverage 100.00% (3/3 changed lines)']);
+            }
+        };
+        $plan = StepPlan::command('test', ['phpunit'])->parseWith($parser);
+
+        $result = $runner->run([new FakeStep('test', $plan)], $this->context(), Mode::Check);
+
+        $this->assertSame(['patch coverage 100.00% (3/3 changed lines)'], $result->steps[0]->metrics);
+    }
+
     public function test_a_nonzero_exit_marks_the_step_failed_and_carries_parsed_findings(): void
     {
         $executor = (new FakeProcessExecutor())->queueFailure(1, 'boom');

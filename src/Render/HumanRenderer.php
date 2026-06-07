@@ -51,6 +51,10 @@ final class HumanRenderer implements Renderer
         foreach ($step->changed as $file) {
             $output->writeln(sprintf('       <fg=green>fixed</> <fg=cyan>%s</>', $file));
         }
+
+        foreach ($step->metrics as $metric) {
+            $output->writeln(sprintf('       <fg=gray>%s</>', $metric));
+        }
     }
 
     private function finding(Finding $finding): string

@@ -81,6 +81,15 @@ final class StepResultTest extends TestCase
             'skipReason' => null,
             'findings' => [$finding->toArray()],
             'changed' => [],
+            'metrics' => [],
         ], $result->toArray());
+    }
+
+    public function test_it_carries_metrics_for_a_passing_step(): void
+    {
+        $result = StepResult::passed('test', 'Tests', durationSeconds: 1.0, metrics: ['patch coverage 100.00% (5/5 changed lines)']);
+
+        $this->assertSame(['patch coverage 100.00% (5/5 changed lines)'], $result->metrics);
+        $this->assertSame(['patch coverage 100.00% (5/5 changed lines)'], $result->toArray()['metrics']);
     }
 }

@@ -62,7 +62,25 @@ final class CoveragePatchParserTest extends TestCase
         $project = $this->projectWithClover([10 => 1, 11 => 1]);
         $parser = $this->parser($project, 100, ['src/Foo.php' => [[10, 11]]]);
 
-        $this->assertSame([], $parser->parse($this->emptyResult())->findings);
+        $result = $parser->parse($this->emptyResult());
+        $this->assertSame([], $result->findings);
+        $this->assertSame(['patch coverage 100.00% (2/2 changed lines)'], $result->metrics, 'the % is reported even when passing');
+    }
+
+    public function test_it_reports_the_metric_alongside_findings_when_below_threshold(): void
+    {
+        $project = $this->projectWithClover([10 => 1, 11 => 0]);
+        $parser = $this->parser($project, 100, ['src/Foo.php' => [[10, 11]]]);
+
+        $this->assertSame(['patch coverage 50.00% (1/2 changed lines)'], $parser->parse($this->emptyResult())->metrics);
+    }
+
+    public function test_no_metric_when_no_changed_line_is_measurable(): void
+    {
+        $project = $this->projectWithClover([10 => 1]); // changed range references unmeasurable lines
+        $parser = $this->parser($project, 100, ['src/Foo.php' => [[80, 90]]]);
+
+        $this->assertSame([], $parser->parse($this->emptyResult())->metrics, 'nothing measurable means no % to report');
     }
 
     public function test_below_threshold_it_adds_a_summary_finding_and_a_per_file_finding(): void

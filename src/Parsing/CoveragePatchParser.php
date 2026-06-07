@@ -50,11 +50,16 @@ final readonly class CoveragePatchParser implements OutputParser
         $report = CloverReport::fromFile($this->cloverPath, $this->projectRoot);
         $patch = PatchCoverage::compute($this->changedRanges, $report);
 
+        $percent = $patch->percent();
+        $metrics = $percent === null
+            ? $base->metrics
+            : [...$base->metrics, sprintf('patch coverage %.2f%% (%d/%d changed lines)', $percent, $patch->covered, $patch->total)];
+
         if ($patch->meets($this->minimum)) {
-            return $base;
+            return new ParseResult($base->findings, $base->changed, $metrics);
         }
 
-        return new ParseResult([...$base->findings, ...$this->findings($patch)], $base->changed);
+        return new ParseResult([...$base->findings, ...$this->findings($patch)], $base->changed, $metrics);
     }
 
     /**

@@ -36,8 +36,14 @@ final readonly class CoverageParser implements OutputParser
         $base = $this->inner->parse($result);
 
         $percent = $this->lineCoverage($result->combinedOutput());
-        if ($percent === null || $percent >= $this->minimum) {
+        if ($percent === null) {
             return $base;
+        }
+
+        $metrics = [...$base->metrics, sprintf('line coverage %.2f%%', $percent)];
+
+        if ($percent >= $this->minimum) {
+            return new ParseResult($base->findings, $base->changed, $metrics);
         }
 
         $finding = new Finding(
@@ -50,7 +56,7 @@ final readonly class CoverageParser implements OutputParser
             ),
         );
 
-        return new ParseResult([...$base->findings, $finding], $base->changed);
+        return new ParseResult([...$base->findings, $finding], $base->changed, $metrics);
     }
 
     /**

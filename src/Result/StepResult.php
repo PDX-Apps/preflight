@@ -18,6 +18,7 @@ final readonly class StepResult
     /**
      * @param  list<Finding>  $findings
      * @param  list<string>  $changed files a fixer rewrote during this step
+     * @param  list<string>  $metrics informational one-liners (e.g. a coverage %) for a passing run
      */
     private function __construct(
         public string $name,
@@ -29,12 +30,14 @@ final readonly class StepResult
         public string $output,
         public ?string $skipReason,
         public array $changed = [],
+        public array $metrics = [],
     ) {
     }
 
     /**
      * @param  list<Finding>  $findings
      * @param  list<string>  $changed
+     * @param  list<string>  $metrics
      */
     public static function passed(
         string $name,
@@ -44,13 +47,15 @@ final readonly class StepResult
         array $findings = [],
         int $exitCode = 0,
         array $changed = [],
+        array $metrics = [],
     ): self {
-        return new self($name, $label, StepStatus::Passed, $findings, $durationSeconds, $exitCode, $output, null, $changed);
+        return new self($name, $label, StepStatus::Passed, $findings, $durationSeconds, $exitCode, $output, null, $changed, $metrics);
     }
 
     /**
      * @param  list<Finding>  $findings
      * @param  list<string>  $changed
+     * @param  list<string>  $metrics
      */
     public static function failed(
         string $name,
@@ -60,8 +65,9 @@ final readonly class StepResult
         int $exitCode,
         string $output = '',
         array $changed = [],
+        array $metrics = [],
     ): self {
-        return new self($name, $label, StepStatus::Failed, $findings, $durationSeconds, $exitCode, $output, null, $changed);
+        return new self($name, $label, StepStatus::Failed, $findings, $durationSeconds, $exitCode, $output, null, $changed, $metrics);
     }
 
     public static function skipped(string $name, string $label, string $reason): self
@@ -93,7 +99,8 @@ final readonly class StepResult
      *     exitCode: ?int,
      *     skipReason: ?string,
      *     findings: list<array<string, mixed>>,
-     *     changed: list<string>
+     *     changed: list<string>,
+     *     metrics: list<string>
      * }
      */
     public function toArray(): array
@@ -107,6 +114,7 @@ final readonly class StepResult
             'skipReason' => $this->skipReason,
             'findings' => array_map(static fn (Finding $f): array => $f->toArray(), $this->findings),
             'changed' => $this->changed,
+            'metrics' => $this->metrics,
         ];
     }
 }

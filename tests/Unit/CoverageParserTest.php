@@ -58,6 +58,22 @@ final class CoverageParserTest extends TestCase
         $this->assertSame([], $this->parser(90.0)->parse($this->withCoverageText('Lines:   100.00% (10/10)'))->findings);
     }
 
+    public function test_it_reports_the_line_coverage_metric_whether_or_not_it_passes(): void
+    {
+        $pass = $this->parser(90.0)->parse($this->withCoverageText('Lines:   95.00% (95/100)'));
+        $this->assertSame(['line coverage 95.00%'], $pass->metrics);
+
+        $fail = $this->parser(90.0)->parse($this->withCoverageText('Lines:   80.00% (80/100)'));
+        $this->assertSame(['line coverage 80.00%'], $fail->metrics, 'metric is reported alongside the failure too');
+    }
+
+    public function test_no_metric_when_no_percentage_is_present(): void
+    {
+        $result = $this->parser(90.0)->parse(new ProcessResult(0, '<testsuites/>', 'no coverage summary here'));
+
+        $this->assertSame([], $result->metrics);
+    }
+
     public function test_it_preserves_inner_findings_and_appends_the_coverage_one(): void
     {
         $testFailure = new Finding('test', Severity::Error, 'FooTest failed');

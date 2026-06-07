@@ -187,6 +187,9 @@ How it works:
   public method that calls them.
 - On a shortfall it names the exact uncovered lines per file, e.g.
   `src/Foo.php — Uncovered changed lines: 42-45, 51`, so the fix is unambiguous.
+- On a **passing** run it still reports the number — `patch coverage 100.00% (191/191 changed
+  lines)` — in the human output, the Markdown job summary, and the JSON report
+  (`steps[].metrics`). `minCoverage` reports its whole-project `line coverage %` the same way.
 - Without a clover report or a driver, it attaches a non-failing warning instead of failing.
 
 **On choosing the threshold.** 100% patch coverage is far more attainable than 100%

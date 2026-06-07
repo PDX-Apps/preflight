@@ -105,6 +105,7 @@ final readonly class SequentialRunner implements Runner
                 $result->combinedOutput(),
                 $findings,
                 changed: $parsed->changed,
+                metrics: $parsed->metrics,
             );
         }
 
@@ -116,6 +117,7 @@ final readonly class SequentialRunner implements Runner
             $result->exitCode,
             $result->combinedOutput(),
             changed: $parsed->changed,
+            metrics: $parsed->metrics,
         );
     }
 

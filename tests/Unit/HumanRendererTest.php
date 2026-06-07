@@ -38,6 +38,15 @@ final class HumanRendererTest extends TestCase
         $this->assertStringContainsString('passed', $text);
     }
 
+    public function test_it_shows_a_steps_metrics(): void
+    {
+        $result = new RunResult([
+            StepResult::passed('test', 'Tests', durationSeconds: 1.0, metrics: ['patch coverage 100.00% (5/5 changed lines)']),
+        ]);
+
+        $this->assertStringContainsString('patch coverage 100.00% (5/5 changed lines)', $this->render($result));
+    }
+
     public function test_a_failing_step_lists_its_findings_with_location_and_message(): void
     {
         $finding = new Finding('phpstan', Severity::Error, 'Undefined variable $x', 'app/Foo.php', 12, 5, 'variable.undefined');

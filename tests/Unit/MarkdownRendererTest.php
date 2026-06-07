@@ -32,6 +32,17 @@ final class MarkdownRendererTest extends TestCase
         $this->assertStringContainsString('| Step | Status | Findings | Time |', $md);
         $this->assertStringContainsString('| Pint | ✅ | 0 | 0.50s |', $md);
         $this->assertStringNotContainsString('### Findings', $md);
+        $this->assertStringNotContainsString('### Coverage', $md);
+    }
+
+    public function test_it_renders_a_coverage_section_from_step_metrics(): void
+    {
+        $md = $this->render(new RunResult([
+            StepResult::passed('test', 'Tests', durationSeconds: 2.3, metrics: ['patch coverage 100.00% (5/5 changed lines)']),
+        ]));
+
+        $this->assertStringContainsString('### Coverage', $md);
+        $this->assertStringContainsString('- **Tests** — patch coverage 100.00% (5/5 changed lines)', $md);
     }
 
     public function test_a_failing_run_shows_a_fail_header_and_a_findings_section(): void

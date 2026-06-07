@@ -33,6 +33,10 @@ final class MarkdownRenderer implements Renderer
             $lines[] = $this->row($step);
         }
 
+        foreach ($this->metricLines($result) as $line) {
+            $lines[] = $line;
+        }
+
         $findings = $result->findings();
         if ($findings !== []) {
             $lines[] = '';
@@ -43,6 +47,28 @@ final class MarkdownRenderer implements Renderer
         }
 
         $output->writeln(implode("\n", $lines));
+    }
+
+    /**
+     * A "Coverage" section listing each step's metrics (e.g. patch/line coverage %), or no
+     * lines at all when none reported any — so a run without coverage gates stays clean.
+     *
+     * @return list<string>
+     */
+    private function metricLines(RunResult $result): array
+    {
+        $lines = [];
+        foreach ($result->steps as $step) {
+            foreach ($step->metrics as $metric) {
+                $lines[] = sprintf('- **%s** — %s', $step->label, $metric);
+            }
+        }
+
+        if ($lines === []) {
+            return [];
+        }
+
+        return ['', '### Coverage', ...$lines];
     }
 
     private function header(RunResult $result): string

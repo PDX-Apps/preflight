@@ -19,6 +19,14 @@ final class ParseResultTest extends TestCase
 
         $this->assertSame([], $result->findings);
         $this->assertSame([], $result->changed);
+        $this->assertSame([], $result->metrics);
+    }
+
+    public function test_it_carries_metrics(): void
+    {
+        $result = new ParseResult([], [], ['line coverage 97.50%']);
+
+        $this->assertSame(['line coverage 97.50%'], $result->metrics);
     }
 
     public function test_of_findings_carries_findings_and_no_changes(): void

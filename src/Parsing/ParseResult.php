@@ -20,10 +20,13 @@ final readonly class ParseResult
     /**
      * @param list<Finding> $findings
      * @param list<string> $changed project-relative paths a fixer rewrote
+     * @param list<string> $metrics informational one-liners (e.g. a coverage %) shown on a
+     *        passing run, never treated as findings
      */
     public function __construct(
         public array $findings = [],
         public array $changed = [],
+        public array $metrics = [],
     ) {
     }
 

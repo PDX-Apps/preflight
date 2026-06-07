@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Coverage % in the results.** A passing run now reports the measured coverage as an
+  informational metric — patch coverage when `minPatchCoverage` is set, whole-project line
+  coverage when `minCoverage` is set — shown in the human output, the Markdown job summary
+  (a "Coverage" section), and the JSON report (`steps[].metrics`). Runs without a coverage
+  gate show nothing extra.
 - **Line-level patch (diff) coverage.** `Tests::make()->minPatchCoverage(N)` gates the run on
   the coverage of only the lines the current change touched, on a `--since`/`--dirty` run. It
   reads the `clover` report, runs the whole suite (so the diff is measured against every test),
