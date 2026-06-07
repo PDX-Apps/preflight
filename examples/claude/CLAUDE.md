@@ -17,3 +17,8 @@ After changing any PHP file, verify your work with Preflight before reporting do
 
 The exit code is authoritative (`0` = clean, non-zero = findings). `--format=agent` prints
 errors only — no ANSI, no success noise. `--dirty` limits the run to files you changed.
+
+If it reports `Uncovered changed lines: …`, those are lines you changed that no test covers —
+add a test driving the public path that reaches them. For a genuinely untestable line, exclude
+it with a bare `// @codeCoverageIgnoreStart` / `// @codeCoverageIgnoreEnd` (reason on its own
+line). If unsure or you can't reach the threshold, stop and ask rather than working around it.

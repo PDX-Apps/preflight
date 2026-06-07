@@ -62,11 +62,14 @@ final readonly class Preflight
      * Resolve the configured steps against the given scope and run them.
      *
      * The whole project is the default scope; narrowing (via --files/--dirty/--module) is
-     * applied by the console layer, which passes a narrowed {@see TargetSet}.
+     * applied by the console layer, which passes a narrowed {@see TargetSet} and, for
+     * line-level patch coverage, the changed line ranges.
+     *
+     * @param (\Closure(): array<string, list<array{int, int}>>)|array<string, list<array{int, int}>> $changedLines
      */
-    public function run(Mode $mode, ?TargetSet $targets = null): RunResult
+    public function run(Mode $mode, ?TargetSet $targets = null, \Closure|array $changedLines = []): RunResult
     {
-        $context = new Context($this->projectRoot, $targets ?? TargetSet::wholeProject(), CoverageDriver::detect());
+        $context = new Context($this->projectRoot, $targets ?? TargetSet::wholeProject(), CoverageDriver::detect(), $changedLines);
         $runner = new SequentialRunner($this->executor, failFast: $this->configuration->failFast);
 
         // With no explicit steps configured, fall back to every installed built-in.

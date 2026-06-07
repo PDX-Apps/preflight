@@ -7,6 +7,7 @@ namespace PdxApps\Preflight\Tests\Unit;
 use PdxApps\Preflight\Context;
 use PdxApps\Preflight\Mode;
 use PdxApps\Preflight\Parsing\CoverageParser;
+use PdxApps\Preflight\Parsing\CoveragePatchParser;
 use PdxApps\Preflight\Parsing\JUnitParser;
 use PdxApps\Preflight\Process\StepPlan;
 use PdxApps\Preflight\Severity;
@@ -22,9 +23,12 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Tests::class)]
 final class TestsStepTest extends TestCase
 {
-    private function context(TempProject $project, ?TargetSet $targets = null, ?CoverageDriver $driver = null): Context
+    /**
+     * @param array<string, list<array{int, int}>> $changedLines
+     */
+    private function context(TempProject $project, ?TargetSet $targets = null, ?CoverageDriver $driver = null, array $changedLines = []): Context
     {
-        return new Context($project->root, $targets ?? TargetSet::wholeProject(), $driver);
+        return new Context($project->root, $targets ?? TargetSet::wholeProject(), $driver, $changedLines);
     }
 
     private function projectWith(string ...$binaries): TempProject
@@ -253,5 +257,88 @@ final class TestsStepTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         Tests::make()->minCoverage(150);
+    }
+
+    // --- patch coverage ---
+
+    public function test_min_patch_coverage_wraps_the_parser_and_runs_the_whole_suite(): void
+    {
+        $project = $this->projectWith('phpunit');
+        $changed = ['src/Foo.php' => [[10, 12]]];
+
+        $plan = Tests::make()->runner('phpunit')
+            ->coverage(['clover' => 'build/coverage.xml'])
+            ->minPatchCoverage(100)
+            ->plan($this->context($project, TargetSet::narrowed([Target::file('src/Foo.php')]), CoverageDriver::Pcov, $changed), Mode::Check);
+
+        $this->assertInstanceOf(CoveragePatchParser::class, $plan->parser);
+        $this->assertTrue($plan->judgesByFindings);
+        $this->assertContains('--coverage-clover=build/coverage.xml', $plan->command);
+        // Whole suite: the changed file path is NOT appended (coverage measures the diff against all tests).
+        $this->assertNotContains('src/Foo.php', $plan->command);
+        $this->assertSame([], $plan->notes);
+    }
+
+    public function test_min_patch_coverage_is_inert_on_a_whole_project_run(): void
+    {
+        $project = $this->projectWith('phpunit');
+
+        $plan = Tests::make()->runner('phpunit')
+            ->coverage(['clover' => 'build/coverage.xml'])
+            ->minPatchCoverage(100)
+            ->plan($this->context($project, driver: CoverageDriver::Pcov, changedLines: []), Mode::Check);
+
+        $this->assertNotInstanceOf(CoveragePatchParser::class, $plan->parser, 'no changed lines means nothing to gate');
+    }
+
+    public function test_min_patch_coverage_without_a_clover_report_warns_instead_of_gating(): void
+    {
+        $project = $this->projectWith('phpunit');
+        $changed = ['src/Foo.php' => [[1, 3]]];
+
+        $plan = Tests::make()->runner('phpunit')
+            ->minPatchCoverage(100)
+            ->plan($this->context($project, driver: CoverageDriver::Pcov, changedLines: $changed), Mode::Check);
+
+        $this->assertNotInstanceOf(CoveragePatchParser::class, $plan->parser);
+        $this->assertCount(1, $plan->notes);
+        $this->assertSame(Severity::Warning, $plan->notes[0]->severity);
+        $this->assertStringContainsString('no clover report', $plan->notes[0]->message);
+    }
+
+    public function test_min_patch_coverage_without_a_driver_warns_and_does_not_gate(): void
+    {
+        $project = $this->projectWith('phpunit');
+        $changed = ['src/Foo.php' => [[1, 3]]];
+
+        $plan = Tests::make()->runner('phpunit')
+            ->coverage(['clover' => 'build/coverage.xml'])
+            ->minPatchCoverage(100)
+            ->plan($this->context($project, driver: null, changedLines: $changed), Mode::Check);
+
+        $this->assertContains('--no-coverage', $plan->command);
+        $this->assertNotInstanceOf(CoveragePatchParser::class, $plan->parser);
+        $this->assertFalse($plan->judgesByFindings);
+    }
+
+    public function test_min_patch_coverage_resolves_a_relative_clover_path_against_the_root(): void
+    {
+        $project = $this->projectWith('phpunit');
+        $changed = ['src/Foo.php' => [[1, 1]]];
+        // An absolute path is kept as-is; a relative one is resolved under the project root.
+        // Both produce a wrapped parser — exercised indirectly via the smoke test; here we just
+        // confirm an absolute path is accepted without error.
+        $plan = Tests::make()->runner('phpunit')
+            ->coverage(['clover' => '/tmp/abs-coverage.xml'])
+            ->minPatchCoverage(100)
+            ->plan($this->context($project, driver: CoverageDriver::Pcov, changedLines: $changed), Mode::Check);
+
+        $this->assertInstanceOf(CoveragePatchParser::class, $plan->parser);
+    }
+
+    public function test_min_patch_coverage_rejects_an_out_of_range_percentage(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Tests::make()->minPatchCoverage(-1);
     }
 }

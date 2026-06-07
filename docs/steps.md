@@ -129,7 +129,8 @@ file, line, and message. Uses `phpunit.xml`/`phpunit.xml.dist` if present.
 | `->runner(string)` | Force a runner: `auto` (default), `paratest`, `pest`, `phpunit`. |
 | `->filter(string)` | Run only matching tests (`--filter`). |
 | `->coverage(array)` | Emit coverage reports as `format => path` (otherwise off). See below. |
-| `->minCoverage(float)` | Fail the run under this line-coverage %. Implies coverage on. |
+| `->minCoverage(float)` | Fail the run under this whole-project line-coverage %. Implies coverage on. |
+| `->minPatchCoverage(float)` | Fail the run under this **patch** (changed-line) coverage %. See below. |
 | `->before(array)` | Common for `['php', 'artisan', 'config:clear']` before tests. |
 
 ```php
@@ -161,6 +162,50 @@ is attached instead — so a local run without Xdebug isn't blocked, and `minCov
 skipped rather than failing. Run `preflight doctor` to see the detected driver. With `auto`,
 coverage runs under PHPUnit (serial) for reliability; pick `paratest`/`pest` explicitly for
 parallel coverage.
+
+#### Patch coverage (changed lines only)
+
+Where `minCoverage` gates the **whole project**, `minPatchCoverage` gates only the lines the
+current change touched — "did you test what you just wrote?". It's the signal a CI patch check
+(or an AI agent) wants, and it composes with the whole-project floor:
+
+```php
+Tests::make()
+    ->coverage(['clover' => 'build/coverage.xml'])
+    ->minCoverage(80)         // whole-project floor — never regress
+    ->minPatchCoverage(90);   // 90% of changed lines must be covered
+```
+
+How it works:
+
+- It needs a **`clover`** report (it reads per-line hit data) and a **change-scoped run**
+  (`--since=<ref>` or `--dirty`). On a whole-project run there's no diff, so the gate is inert.
+- The whole suite still runs (so coverage of the diff is measured against *all* tests); only
+  the **gate** is scoped to the changed lines.
+- The denominator is the changed lines coverage can measure: comments, braces, and lines in
+  files the suite never loads don't count. Private methods are covered transitively — drive the
+  public method that calls them.
+- On a shortfall it names the exact uncovered lines per file, e.g.
+  `src/Foo.php — Uncovered changed lines: 42-45, 51`, so the fix is unambiguous.
+- Without a clover report or a driver, it attaches a non-failing warning instead of failing.
+
+**On choosing the threshold.** 100% patch coverage is far more attainable than 100%
+whole-project (it only judges the diff), but a genuinely untestable changed line — an
+environment-dependent branch, a defensive `return` — still happens. For those, exclude the line
+with a **bare** marker (the reason goes on its own line; trailing text on the marker line is
+silently ignored by php-code-coverage):
+
+```php
+// Only reachable when the temp dir is unwritable — not reproducible in a test.
+// @codeCoverageIgnoreStart
+return Result::failure('cannot write');
+// @codeCoverageIgnoreEnd
+```
+
+Ignored lines leave both the numerator and denominator, so the gate stays honest. Prefer a
+per-line ignore (visible in review) over lowering the threshold for the whole project; pick a
+threshold like 80–90 if your team doesn't want to annotate, and reserve 100 for codebases
+willing to keep that discipline.
 
 ---
 

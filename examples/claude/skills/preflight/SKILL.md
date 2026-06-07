@@ -33,3 +33,32 @@ Notes:
 - `--format=agent` prints errors only (no ANSI, no success noise) — read or grep the lines.
 - `--dirty` limits the run to files you changed; drop it to check the whole project.
 - One file: `vendor/bin/preflight --files=path/to/File.php --format=agent`.
+
+## Patch-coverage findings (`Uncovered changed lines`)
+
+If a project gates patch coverage, a shortfall looks like:
+
+```
+src/Foo.php:42 [test] Uncovered changed lines: 42-45, 51
+```
+
+Those are lines **you changed** that no test exercises. To resolve, in order:
+
+1. **Write a test that covers them.** Drive the public method that reaches the code — you
+   don't (and can't) test private methods directly; covering the public path covers them.
+2. **If a line is genuinely untestable** (an environment-dependent branch, a defensive
+   `return` you can't reproduce), exclude it with a **bare** marker — the reason goes on its
+   own line; trailing text on the marker line is silently ignored:
+
+   ```php
+   // Only reachable when the temp dir is unwritable — not reproducible in a test.
+   // @codeCoverageIgnoreStart
+   return Result::failure('cannot write');
+   // @codeCoverageIgnoreEnd
+   ```
+
+3. **If you're unsure whether ignoring is legitimate, or you can't reach the threshold after a
+   real attempt, STOP and ask the user.** Do not loop indefinitely adding contrived tests or
+   blanket-ignoring code. If the user agrees the target is too strict for this project, lower
+   it in `preflight.php` (`->minPatchCoverage(N)`) — a visible, reviewable decision — rather
+   than working around the gate.

@@ -20,3 +20,7 @@ Notes:
 - `--dirty` limits the run to files you changed; drop it to check the whole project.
 - One file: `vendor/bin/preflight --files=path/to/File.php --format=agent`.
 - Machine-readable detail: `vendor/bin/preflight --format=json`.
+- `Uncovered changed lines: …` means lines you changed lack a test — cover them via the public
+  path that reaches the code. For a genuinely untestable line, exclude it with a bare
+  `// @codeCoverageIgnoreStart` / `// @codeCoverageIgnoreEnd` (reason on its own line). If
+  unsure or stuck, stop and ask rather than writing contrived tests or blanket-ignoring code.

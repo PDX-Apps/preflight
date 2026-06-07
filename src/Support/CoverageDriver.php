@@ -23,8 +23,10 @@ enum CoverageDriver: string
      * The driver available to the current PHP process, or null if none — in which case
      * coverage cannot run. PCOV is preferred (fastest), then phpdbg, then Xdebug.
      *
-     * @codeCoverageIgnore Branch taken depends on which extension/SAPI the runtime has
-     * loaded, so no single test process can exercise more than one path.
+     * The branch taken depends on which extension/SAPI the runtime has loaded, so no single
+     * test process can exercise more than one path — excluded from coverage.
+     *
+     * @codeCoverageIgnore
      */
     public static function detect(): ?self
     {

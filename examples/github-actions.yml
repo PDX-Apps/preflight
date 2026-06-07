@@ -74,7 +74,8 @@ jobs:
         with:
           sarif_file: preflight.sarif
 
-  # Optional: a faster PR-only job that checks just the changed files.
+  # Optional: a faster PR-only job that checks just the changed files — and, if your
+  # preflight.php sets ->minPatchCoverage(N), gates coverage of the lines this PR changed.
   preflight-changed:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -86,9 +87,13 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          coverage: none
+          # A driver is needed only if you gate patch coverage; use 'none' otherwise.
+          coverage: pcov
 
       - run: composer install --no-interaction --no-progress --prefer-dist
 
+      # --since scopes the run to the PR diff. With a patch-coverage gate configured —
+      #     Tests::make()->coverage(['clover' => 'build/coverage.xml'])->minPatchCoverage(90)
+      # — this fails the PR if the changed lines aren't covered, naming the exact lines.
       - name: Preflight (changed files only)
         run: vendor/bin/preflight --since=origin/${{ github.base_ref }} --format=github

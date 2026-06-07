@@ -49,6 +49,34 @@ final class ContextTest extends TestCase
         $this->assertNull($context->configPath(null));
     }
 
+    public function test_changed_lines_default_to_none(): void
+    {
+        $this->assertSame([], $this->context((new TempProject())->root)->changedLines());
+    }
+
+    public function test_changed_lines_can_be_given_as_an_array(): void
+    {
+        $changed = ['src/Foo.php' => [[10, 12]]];
+        $context = new Context((new TempProject())->root, TargetSet::wholeProject(), null, $changed);
+
+        $this->assertSame($changed, $context->changedLines());
+    }
+
+    public function test_changed_lines_from_a_closure_are_computed_on_access(): void
+    {
+        $calls = 0;
+        $closure = function () use (&$calls): array {
+            $calls++;
+
+            return ['src/Foo.php' => [[1, 1]]];
+        };
+        $context = new Context((new TempProject())->root, TargetSet::wholeProject(), null, $closure);
+
+        $this->assertSame(0, $calls, 'the closure is not run until changedLines() is called');
+        $this->assertSame(['src/Foo.php' => [[1, 1]]], $context->changedLines());
+        $this->assertSame(1, $calls);
+    }
+
     public function test_it_resolves_a_vendor_bin_tool_path(): void
     {
         $project = new TempProject();

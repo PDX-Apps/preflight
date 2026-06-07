@@ -9,6 +9,7 @@ use PdxApps\Preflight\Contracts\OutputParser;
 use PdxApps\Preflight\Finding;
 use PdxApps\Preflight\Mode;
 use PdxApps\Preflight\Parsing\CoverageParser;
+use PdxApps\Preflight\Parsing\CoveragePatchParser;
 use PdxApps\Preflight\Parsing\JUnitParser;
 use PdxApps\Preflight\Process\StepPlan;
 use PdxApps\Preflight\Severity;
@@ -37,6 +38,8 @@ use PdxApps\Preflight\Targeting;
  *
  * @SuppressWarnings("PHPMD.TooManyPublicMethods") A fluent step builder: the Step contract
  *   plus the runner/filter/coverage/minCoverage setters legitimately exceed the default cap.
+ * @SuppressWarnings("PHPMD.ExcessiveClassComplexity") Coverage has three legitimate modes
+ *   (off, whole-project floor, line-level patch), each with a driver/runner branch.
  */
 final class Tests extends AbstractStep
 {
@@ -68,6 +71,8 @@ final class Tests extends AbstractStep
     private array $coverage = [];
 
     private ?float $minCoverage = null;
+
+    private ?float $minPatchCoverage = null;
 
     #[\Override]
     public function name(): string
@@ -184,6 +189,28 @@ final class Tests extends AbstractStep
         return $clone;
     }
 
+    /**
+     * Fail the run if line-level *patch* coverage is below this percentage (0–100): of the
+     * lines the current change touched, the share that tests cover. Unlike {@see minCoverage()}
+     * (a whole-project floor), this judges only the diff — the signal an agent or PR wants
+     * ("did you test what you just wrote?").
+     *
+     * It needs a `clover` report (add one via {@see coverage()}) and a change-scoped run
+     * (`--since`/`--dirty`); without a clover report a warning is attached instead of failing,
+     * and a whole-project run simply has nothing to gate. Implies coverage is on.
+     */
+    public function minPatchCoverage(float $percent): static
+    {
+        if ($percent < 0.0 || $percent > 100.0) {
+            throw new \InvalidArgumentException('minPatchCoverage must be between 0 and 100.');
+        }
+
+        $clone = clone $this;
+        $clone->minPatchCoverage = $percent;
+
+        return $clone;
+    }
+
     public function plan(Context $context, Mode $mode): StepPlan
     {
         $coverageOn = $this->coverageRequested();
@@ -207,10 +234,14 @@ final class Tests extends AbstractStep
             $command[] = '--filter=' . $this->filter;
         }
 
+        // Patch coverage measures the diff against the *whole* suite, so it must not narrow the
+        // run to the changed files — that would only execute the touched tests.
+        $paths = $coverage['wholeSuite'] ? [] : $context->pathsFor($this->targeting());
+
         $command = [
             ...$command,
             ...$this->extraArgs(),
-            ...$context->pathsFor($this->targeting()),
+            ...$paths,
         ];
 
         $plan = StepPlan::command($this->name(), $command)
@@ -238,7 +269,7 @@ final class Tests extends AbstractStep
 
     private function coverageRequested(): bool
     {
-        return $this->coverage !== [] || $this->minCoverage !== null;
+        return $this->coverage !== [] || $this->minCoverage !== null || $this->minPatchCoverage !== null;
     }
 
     /**
@@ -247,38 +278,122 @@ final class Tests extends AbstractStep
      * to judge pass/fail by findings. Coverage is off unless requested, and degrades to a
      * non-failing warning when no driver is active.
      *
-     * @return array{args: list<string>, env: array<string, string>, parser: OutputParser, note: ?Finding, gate: bool}
+     * @return array{args: list<string>, env: array<string, string>, parser: OutputParser, note: ?Finding, gate: bool, wholeSuite: bool}
      */
     private function coverageFor(Context $context, bool $isPest): array
     {
         $parser = new JUnitParser($context->projectRoot(), $this->name());
 
         if (! $this->coverageRequested()) {
-            return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => null, 'gate' => false];
+            return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => null, 'gate' => false, 'wholeSuite' => false];
         }
 
         $driver = $context->coverageDriver();
         if (!$driver instanceof \PdxApps\Preflight\Support\CoverageDriver) {
             // Safety net: coverage was asked for but no driver is active. Run the tests
             // (still a useful gate) without coverage, and warn rather than fail.
-            return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => $this->noDriverWarning(), 'gate' => false];
+            return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => $this->noDriverWarning(), 'gate' => false, 'wholeSuite' => false];
         }
 
+        [$args, $parser, $gate] = $this->floorCoverageFor($isPest, $parser);
+        $patch = $this->patchGateFor($context, $parser);
+
+        return [
+            'args' => $args,
+            'env' => $driver->env(),
+            'parser' => $patch['parser'],
+            'note' => $patch['note'],
+            'gate' => $gate || $patch['gate'],
+            'wholeSuite' => $patch['wholeSuite'],
+        ];
+    }
+
+    /**
+     * Build the coverage report args and apply the whole-project line-coverage floor
+     * ({@see minCoverage()}). Pest enforces the minimum natively (`--min`); PHPUnit/Paratest
+     * read `--coverage-text` and gate by findings via {@see CoverageParser}.
+     *
+     * @return array{0: list<string>, 1: OutputParser, 2: bool} [args, parser, gate]
+     */
+    private function floorCoverageFor(bool $isPest, OutputParser $parser): array
+    {
         $args = $isPest ? ['--coverage'] : [];
         $args = [...$args, ...$this->coverageReportArgs($isPest)];
-        $gate = false;
 
-        if ($this->minCoverage !== null) {
-            if ($isPest) {
-                $args[] = sprintf('--min=%s', $this->minCoverage);
-            } else {
-                $args[] = '--coverage-text=php://stdout';
-                $parser = new CoverageParser($parser, $this->minCoverage, $this->name());
-                $gate = true;
-            }
+        if ($this->minCoverage === null) {
+            return [$args, $parser, false];
         }
 
-        return ['args' => $args, 'env' => $driver->env(), 'parser' => $parser, 'note' => null, 'gate' => $gate];
+        if ($isPest) {
+            $args[] = sprintf('--min=%s', $this->minCoverage);
+
+            return [$args, $parser, false];
+        }
+
+        $args[] = '--coverage-text=php://stdout';
+
+        return [$args, new CoverageParser($parser, $this->minCoverage, $this->name()), true];
+    }
+
+    /**
+     * Apply the line-level patch-coverage gate, given the parser built so far. Inert unless a
+     * minimum is set and the run is change-scoped; warns (rather than failing) when no clover
+     * report is configured to read. When it engages it wraps the parser, gates by findings, and
+     * forces the whole suite to run so coverage of the diff is measured against every test.
+     *
+     * @return array{parser: OutputParser, note: ?Finding, gate: bool, wholeSuite: bool}
+     */
+    private function patchGateFor(Context $context, OutputParser $parser): array
+    {
+        $inert = ['parser' => $parser, 'note' => null, 'gate' => false, 'wholeSuite' => false];
+
+        if ($this->minPatchCoverage === null) {
+            return $inert;
+        }
+
+        $changed = $context->changedLines();
+        if ($changed === []) {
+            return $inert;
+        }
+
+        $clover = $this->coverage['clover'] ?? null;
+        if ($clover === null) {
+            return [...$inert, 'note' => $this->patchNoCloverWarning()];
+        }
+
+        $wrapped = new CoveragePatchParser(
+            $parser,
+            $this->resolvePath($context, $clover),
+            $this->minPatchCoverage,
+            $context->projectRoot(),
+            $changed,
+            $this->name(),
+        );
+
+        return ['parser' => $wrapped, 'note' => null, 'gate' => true, 'wholeSuite' => true];
+    }
+
+    /**
+     * Resolve a configured (possibly relative) coverage path against the project root, so the
+     * patch parser can read the report regardless of the process's working directory.
+     */
+    private function resolvePath(Context $context, string $path): string
+    {
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return rtrim($context->projectRoot(), '/') . '/' . $path;
+    }
+
+    private function patchNoCloverWarning(): Finding
+    {
+        return new Finding(
+            tool: $this->name(),
+            severity: Severity::Warning,
+            message: 'Patch coverage was requested but no clover report is configured — '
+                . "skipped the patch-coverage gate. Add coverage(['clover' => 'build/coverage.xml']).",
+        );
     }
 
     /**

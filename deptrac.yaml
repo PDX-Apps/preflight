@@ -25,7 +25,7 @@ deptrac:
     - name: Engine
       collectors:
         - type: classNameRegex
-          value: '#^PdxApps\\Preflight\\(Context|Preflight|Config\\.+|Contracts\\.+|Parsing\\.+|Process\\.+|Runner\\.+|Steps\\.+|Support\\.+)$#'
+          value: '#^PdxApps\\Preflight\\(Context|Preflight|Config\\.+|Contracts\\.+|Coverage\\.+|Parsing\\.+|Process\\.+|Runner\\.+|Steps\\.+|Support\\.+)$#'
 
     - name: CommandSupport
       collectors:

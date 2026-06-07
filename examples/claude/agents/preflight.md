@@ -23,3 +23,8 @@ Rules:
 - The exit code is the source of truth: `0` = clean, non-zero = findings remain.
 - Never report success while any finding remains.
 - Summarise the findings you fixed, grouped by file.
+- `Uncovered changed lines: …` means lines you changed lack a test. Cover them by testing the
+  public path that reaches the code (private methods are covered transitively). For a
+  genuinely untestable line, exclude it with a bare `// @codeCoverageIgnoreStart` /
+  `// @codeCoverageIgnoreEnd` (reason on its own line). If unsure or stuck, stop and ask the
+  user rather than writing contrived tests or blanket-ignoring code.

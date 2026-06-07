@@ -21,10 +21,16 @@ final readonly class Context
 {
     private ConfigResolver $configResolver;
 
+    /**
+     * @param (\Closure(): array<string, list<array{int, int}>>)|array<string, list<array{int, int}>> $changedLines
+     *        the changed line ranges, or a closure to compute them lazily (so the git diff only
+     *        runs when a step actually reads patch coverage)
+     */
     public function __construct(
         private string $projectRoot,
         private TargetSet $targets,
         private ?CoverageDriver $coverageDriver = null,
+        private \Closure|array $changedLines = [],
     ) {
         $this->configResolver = new ConfigResolver($projectRoot);
     }
@@ -42,6 +48,18 @@ final readonly class Context
     public function coverageDriver(): ?CoverageDriver
     {
         return $this->coverageDriver;
+    }
+
+    /**
+     * The changed line ranges per file for this run, used for line-level patch coverage.
+     * Empty unless the run is scoped to a change (`--since`/`--dirty`). Computed on first
+     * access when given a closure, so the git diff is skipped if no step needs it.
+     *
+     * @return array<string, list<array{int, int}>>
+     */
+    public function changedLines(): array
+    {
+        return $this->changedLines instanceof \Closure ? ($this->changedLines)() : $this->changedLines;
     }
 
     public function configPath(?string $reference): ?string

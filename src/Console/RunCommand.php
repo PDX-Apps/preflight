@@ -91,7 +91,10 @@ final class RunCommand extends Command
         }
 
         $request = $this->scopeRequest($input, $configuration);
-        $targets = new ScopeResolver(new GitFiles($executor))->resolve($request, $root, $configuration->modules);
+        $git = new GitFiles($executor);
+        $targets = new ScopeResolver($git)->resolve($request, $root, $configuration->modules);
+        // Lazy: the git diff only runs if a step actually reads patch coverage.
+        $changedLines = fn (): array => $this->changedLines($request, $git, $root);
 
         $cache = new FreshnessCache($root, $this->clock ?? new SystemClock());
         $hash = new InputHasher($root)->hash($targets->files(), $this->configFiles($root));
@@ -103,7 +106,7 @@ final class RunCommand extends Command
         }
 
         $mode = $this->resolveMode($input, $configuration);
-        $result = Preflight::make($configuration, projectRoot: $root, executor: $executor)->run($mode, $targets);
+        $result = Preflight::make($configuration, projectRoot: $root, executor: $executor)->run($mode, $targets, $changedLines);
 
         $format = $this->resolveFormat($input, $configuration->defaultFormat);
         new RendererRegistry()->for($format, isTty: $output->isDecorated())->render($result, $output);
@@ -246,6 +249,27 @@ final class RunCommand extends Command
         }
 
         return $input->getOption('fix') || $configuration->fixByDefault ? Mode::Fix : Mode::Check;
+    }
+
+    /**
+     * The changed line ranges for line-level patch coverage, drawn from the same scope the
+     * run uses: `--since` diffs against the ref, `--dirty` reads the working tree. Other
+     * scopes (explicit files, paths, module) aren't diffs, so they contribute no ranges and
+     * the patch gate stays inert.
+     *
+     * @return array<string, list<array{int, int}>>
+     */
+    private function changedLines(ScopeRequest $request, GitFiles $git, string $root): array
+    {
+        if ($request->since !== null) {
+            return $git->sinceRanges($root, $request->since);
+        }
+
+        if ($request->dirty) {
+            return $git->dirtyRanges($root);
+        }
+
+        return [];
     }
 
     private function scopeRequest(InputInterface $input, Configuration $configuration): ScopeRequest

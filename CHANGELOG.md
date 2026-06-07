@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Line-level patch (diff) coverage.** `Tests::make()->minPatchCoverage(N)` gates the run on
+  the coverage of only the lines the current change touched, on a `--since`/`--dirty` run. It
+  reads the `clover` report, runs the whole suite (so the diff is measured against every test),
+  and on a shortfall names the exact uncovered changed lines per file — the signal a PR check or
+  an AI agent needs. Inert on a whole-project run; warns (without failing) when no clover report
+  or coverage driver is available. Composes with the whole-project `minCoverage` floor.
+
 ## [0.1.0] - 2026-06-07
 
 Initial release — a framework-agnostic, AI/CI-native code-quality runner for PHP.

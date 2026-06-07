@@ -29,6 +29,70 @@ final class RunCommandTest extends TestCase
         return $project;
     }
 
+    /**
+     * A project whose config runs only the Tests step with the patch-coverage gate on, so a
+     * scoped run exercises the changed-line-range computation.
+     */
+    private function projectWithPatchCoverage(): TempProject
+    {
+        $project = new TempProject();
+        $project->file('composer.json', '{}');
+        $project->file('vendor/bin/phpunit', '#!/usr/bin/env php');
+        $project->file('preflight.php', "<?php return PdxApps\\Preflight\\Preflight::configure()->withSteps(["
+            . "PdxApps\\Preflight\\Steps\\Tests::make()->coverage(['clover' => 'build/coverage.xml'])->minPatchCoverage(100),"
+            . "]);");
+
+        return $project;
+    }
+
+    public function test_since_computes_changed_line_ranges_for_patch_coverage(): void
+    {
+        $project = $this->projectWithPatchCoverage();
+        $diff = "--- a/src/Foo.php\n+++ b/src/Foo.php\n@@ -1 +1 @@\n+x\n";
+        $executor = (new FakeProcessExecutor())
+            ->queueSuccess("src/Foo.php\n") // ScopeResolver: git diff --name-only
+            ->queueSuccess($diff)           // changedLines: git diff --unified=0
+            ->queueSuccess('');             // the phpunit run (empty junit)
+
+        $tester = $this->tester($project, $executor);
+        $exit = $tester->execute(['--since' => 'main'], ['decorated' => false]);
+
+        $this->assertContains('--unified=0', $executor->commands()[1], 'the diff ranges are read with --unified=0');
+        $this->assertSame(0, $exit, 'no clover present means nothing measurable, so the gate passes');
+    }
+
+    public function test_a_whole_project_run_computes_no_changed_line_ranges(): void
+    {
+        $project = $this->projectWithPatchCoverage();
+        // No --since/--dirty: the patch gate is inert, so no git diff is consulted for ranges.
+        $executor = (new FakeProcessExecutor())->queueSuccess(''); // just the phpunit run
+
+        $tester = $this->tester($project, $executor);
+        $exit = $tester->execute([], ['decorated' => false]);
+
+        $this->assertSame(0, $exit);
+        foreach ($executor->commands() as $command) {
+            $this->assertNotContains('--unified=0', $command, 'a whole-project run reads no diff ranges');
+        }
+    }
+
+    public function test_dirty_computes_changed_line_ranges_from_the_working_tree(): void
+    {
+        $project = $this->projectWithPatchCoverage();
+        $diff = "--- a/src/Foo.php\n+++ b/src/Foo.php\n@@ -1 +1 @@\n+x\n";
+        $executor = (new FakeProcessExecutor())
+            ->queueSuccess(" M src/Foo.php\n") // ScopeResolver: git status --porcelain
+            ->queueSuccess($diff)             // changedLines: git diff --unified=0 HEAD
+            ->queueSuccess('')                // changedLines: git ls-files --others
+            ->queueSuccess('');               // the phpunit run
+
+        $tester = $this->tester($project, $executor);
+        $tester->execute(['--dirty' => true], ['decorated' => false]);
+
+        $this->assertContains('HEAD', $executor->commands()[1], 'dirty ranges diff against HEAD');
+        $this->assertContains('ls-files', $executor->commands()[2]);
+    }
+
     public function test_a_passing_run_exits_zero_and_reports_success(): void
     {
         $project = $this->projectWithPint();
