@@ -58,6 +58,12 @@ final class DoctorCommand extends Command
             'Config file: %s',
             $diagnostics->hasConfigFile ? '<fg=green>preflight.php</>' : '<fg=gray>none (using defaults)</>',
         ));
+        $output->writeln(sprintf(
+            'Coverage driver: %s',
+            $diagnostics->coverageDriver instanceof \PdxApps\Preflight\Support\CoverageDriver
+                ? sprintf('<fg=green>%s</>', $diagnostics->coverageDriver->label())
+                : '<fg=gray>none (coverage unavailable)</>',
+        ));
         $output->writeln('');
 
         foreach ($diagnostics->steps as $step) {

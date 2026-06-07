@@ -128,11 +128,39 @@ file, line, and message. Uses `phpunit.xml`/`phpunit.xml.dist` if present.
 |---|---|
 | `->runner(string)` | Force a runner: `auto` (default), `paratest`, `pest`, `phpunit`. |
 | `->filter(string)` | Run only matching tests (`--filter`). |
+| `->coverage(array)` | Emit coverage reports as `format => path` (otherwise off). See below. |
+| `->minCoverage(float)` | Fail the run under this line-coverage %. Implies coverage on. |
 | `->before(array)` | Common for `['php', 'artisan', 'config:clear']` before tests. |
 
 ```php
 Tests::make()->runner('pest')->filter('Billing')->before(['php', 'artisan', 'config:clear'])
 ```
+
+#### Coverage
+
+Coverage is **off by default** (`--no-coverage`) — it's slow and needs a driver. Opt in with
+`->coverage([...])`, a `format => path` map. Supported formats: `clover`, `cobertura`, `xml`,
+`html`, `php`, `text` (`text` may use a `null` path to print a summary to stdout). All run
+from one execution:
+
+```php
+Tests::make()->coverage([
+    'clover' => 'build/coverage.xml',  // for Codecov/Coveralls
+    'html'   => 'build/coverage',      // browsable report
+])
+```
+
+`->minCoverage(90)` turns coverage into a gate: Pest enforces it natively (`--min`); for
+PHPUnit/Paratest the step reads the percentage from `--coverage-text` and fails when it falls
+short.
+
+**Driver safety.** Coverage needs PCOV, phpdbg, or Xdebug. When a driver is present the step
+adds the coverage flags (and sets `XDEBUG_MODE=coverage` for you if Xdebug is the driver).
+When **no** driver is active, the tests still run and gate as usual, and a non-failing warning
+is attached instead — so a local run without Xdebug isn't blocked, and `minCoverage` is
+skipped rather than failing. Run `preflight doctor` to see the detected driver. With `auto`,
+coverage runs under PHPUnit (serial) for reliability; pick `paratest`/`pest` explicitly for
+parallel coverage.
 
 ---
 

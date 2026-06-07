@@ -47,6 +47,21 @@ final class SequentialRunnerTest extends TestCase
         $this->assertSame([['a'], ['b']], $executor->commands());
     }
 
+    public function test_plan_notes_ride_along_on_a_passing_step_without_failing_it(): void
+    {
+        $executor = (new FakeProcessExecutor())->queueSuccess();
+        $runner = new SequentialRunner($executor);
+
+        $note = new \PdxApps\Preflight\Finding('test', \PdxApps\Preflight\Severity::Warning, 'coverage skipped: no driver');
+        $plan = StepPlan::command('test', ['phpunit'])->note($note);
+
+        $result = $runner->run([new FakeStep('test', $plan)], $this->context(), Mode::Check);
+
+        $this->assertTrue($result->isSuccess(), 'an advisory note must not fail the step');
+        $this->assertSame(StepStatus::Passed, $result->steps[0]->status);
+        $this->assertSame([$note], $result->steps[0]->findings);
+    }
+
     public function test_a_nonzero_exit_marks_the_step_failed_and_carries_parsed_findings(): void
     {
         $executor = (new FakeProcessExecutor())->queueFailure(1, 'boom');

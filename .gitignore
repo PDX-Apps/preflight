@@ -10,6 +10,7 @@ composer.lock
 /.php-cs-fixer.cache
 .phpunit.result.cache
 .preflight.cache.json
+.deptrac.cache
 
 # OS / editor
 .DS_Store

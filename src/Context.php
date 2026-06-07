@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PdxApps\Preflight;
 
 use PdxApps\Preflight\Support\ConfigResolver;
+use PdxApps\Preflight\Support\CoverageDriver;
 use PdxApps\Preflight\Support\TargetSet;
 use PdxApps\Preflight\Support\Tool;
 
@@ -23,6 +24,7 @@ final readonly class Context
     public function __construct(
         private string $projectRoot,
         private TargetSet $targets,
+        private ?CoverageDriver $coverageDriver = null,
     ) {
         $this->configResolver = new ConfigResolver($projectRoot);
     }
@@ -30,6 +32,16 @@ final readonly class Context
     public function projectRoot(): string
     {
         return $this->projectRoot;
+    }
+
+    /**
+     * The active code-coverage driver, or null if none is available — detected at the
+     * composition root and passed in, so steps that support coverage can adapt without
+     * reading global PHP state themselves.
+     */
+    public function coverageDriver(): ?CoverageDriver
+    {
+        return $this->coverageDriver;
     }
 
     public function configPath(?string $reference): ?string

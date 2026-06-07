@@ -168,7 +168,10 @@ Either skips with an install hint if its tool isn't installed, like any missing 
 
 The `test` step auto-detects the runner: Paratest if installed, then Pest, then PHPUnit.
 All three are driven through the same JUnit output, so findings carry file, line, and the
-failing test's message.
+failing test's message. Coverage is off by default; opt in with
+`Tests::make()->coverage(['clover' => 'build/coverage.xml'])` and gate on it with
+`->minCoverage(90)`. Without a coverage driver (PCOV/Xdebug) the tests still run and a
+non-failing warning is attached — see [the steps reference](docs/steps.md#coverage).
 
 The `composer-audit` step needs **no install** — `composer` ships the `audit` command — so
 it runs by default in every project, scanning `composer.lock` for known CVEs. A known

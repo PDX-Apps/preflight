@@ -93,13 +93,17 @@ final readonly class SequentialRunner implements Runner
 
         $succeeded = $plan->judgesByFindings ? $parsed->findings === [] : $result->successful();
 
+        // Advisory notes (e.g. "coverage skipped: no driver") ride along on the result but
+        // never change the outcome, which was decided above from the parser findings alone.
+        $findings = [...$parsed->findings, ...$plan->notes];
+
         if ($succeeded) {
             return StepResult::passed(
                 $step->name(),
                 $step->label(),
                 $duration,
                 $result->combinedOutput(),
-                $parsed->findings,
+                $findings,
                 changed: $parsed->changed,
             );
         }
@@ -107,7 +111,7 @@ final readonly class SequentialRunner implements Runner
         return StepResult::failed(
             $step->name(),
             $step->label(),
-            $parsed->findings,
+            $findings,
             $duration,
             $result->exitCode,
             $result->combinedOutput(),

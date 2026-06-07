@@ -4,15 +4,30 @@ declare(strict_types=1);
 
 namespace PdxApps\Preflight\Tests\Unit;
 
+use PdxApps\Preflight\Finding;
 use PdxApps\Preflight\Parsing\ExitCodeParser;
 use PdxApps\Preflight\Process\ProcessResult;
 use PdxApps\Preflight\Process\StepPlan;
+use PdxApps\Preflight\Severity;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(StepPlan::class)]
 final class StepPlanTest extends TestCase
 {
+    public function test_notes_accumulate_and_default_to_empty(): void
+    {
+        $plan = StepPlan::command('test', ['phpunit']);
+        $this->assertSame([], $plan->notes);
+
+        $first = new Finding('test', Severity::Warning, 'one');
+        $second = new Finding('test', Severity::Info, 'two');
+        $withNotes = $plan->note($first)->note($second);
+
+        $this->assertSame([$first, $second], $withNotes->notes);
+        $this->assertSame([], $plan->notes, 'note() returns a copy, leaving the original untouched');
+    }
+
     public function test_command_plan_defaults_to_the_exit_code_parser(): void
     {
         $plan = StepPlan::command('phpstan', ['phpstan', 'analyse']);

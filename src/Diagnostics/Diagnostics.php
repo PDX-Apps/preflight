@@ -9,6 +9,7 @@ use PdxApps\Preflight\Config\ConfigLoader;
 use PdxApps\Preflight\Context;
 use PdxApps\Preflight\Contracts\Step;
 use PdxApps\Preflight\Steps\StepRegistry;
+use PdxApps\Preflight\Support\CoverageDriver;
 use PdxApps\Preflight\Support\TargetSet;
 
 /**
@@ -27,12 +28,14 @@ final readonly class Diagnostics
         public string $projectRoot,
         public bool $hasConfigFile,
         public array $steps,
+        public ?CoverageDriver $coverageDriver = null,
     ) {
     }
 
     public static function gather(Configuration $configuration, string $projectRoot): self
     {
-        $context = new Context($projectRoot, TargetSet::wholeProject());
+        $driver = CoverageDriver::detect();
+        $context = new Context($projectRoot, TargetSet::wholeProject(), $driver);
 
         // Diagnose against every default step (instantiated), so steps whose tool is
         // missing are still reported — that is precisely what doctor exists to show.
@@ -43,6 +46,7 @@ final readonly class Diagnostics
             projectRoot: $projectRoot,
             hasConfigFile: new ConfigLoader()->exists($projectRoot),
             steps: array_map(static fn (Step $step): StepDiagnostic => self::diagnose($step, $context), $steps),
+            coverageDriver: $driver,
         );
     }
 
@@ -67,13 +71,14 @@ final readonly class Diagnostics
     }
 
     /**
-     * @return array{projectRoot: string, hasConfigFile: bool, steps: list<array<string, mixed>>}
+     * @return array{projectRoot: string, hasConfigFile: bool, coverageDriver: ?string, steps: list<array<string, mixed>>}
      */
     public function toArray(): array
     {
         return [
             'projectRoot' => $this->projectRoot,
             'hasConfigFile' => $this->hasConfigFile,
+            'coverageDriver' => $this->coverageDriver?->value,
             'steps' => array_map(static fn (StepDiagnostic $s): array => $s->toArray(), $this->steps),
         ];
     }

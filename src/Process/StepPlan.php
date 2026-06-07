@@ -7,6 +7,7 @@ namespace PdxApps\Preflight\Process;
 use PdxApps\Preflight\Contracts\OutputParser;
 use PdxApps\Preflight\Contracts\Runner;
 use PdxApps\Preflight\Contracts\Step;
+use PdxApps\Preflight\Finding;
 use PdxApps\Preflight\Parsing\ExitCodeParser;
 
 /**
@@ -30,6 +31,7 @@ final readonly class StepPlan
      * @param  list<string>  $command  Argv for the main command.
      * @param  list<list<string>>  $before  Argv commands run before the main one, in order.
      * @param  array<string, string>  $env  Extra environment variables.
+     * @param  list<Finding>  $notes  Advisory findings the runner appends to the result.
      */
     private function __construct(
         public array $command,
@@ -39,6 +41,7 @@ final readonly class StepPlan
         public bool $filtersDeprecations = false,
         public bool $judgesByFindings = false,
         public bool $readsReportFile = false,
+        public array $notes = [],
     ) {
     }
 
@@ -115,8 +118,20 @@ final readonly class StepPlan
     }
 
     /**
+     * Attach an advisory finding the runner appends to this step's result, regardless of
+     * pass/fail. Unlike parser findings it never decides the outcome (a Warning/Info note
+     * leaves a passing step passing) — use it to surface things like "coverage was requested
+     * but no driver is active". Calls accumulate.
+     */
+    public function note(Finding $finding): self
+    {
+        return $this->with(notes: [...$this->notes, $finding]);
+    }
+
+    /**
      * @param  list<list<string>>|null  $before
      * @param  array<string, string>|null  $env
+     * @param  list<Finding>|null  $notes
      */
     private function with(
         ?OutputParser $parser = null,
@@ -125,6 +140,7 @@ final readonly class StepPlan
         ?bool $filtersDeprecations = null,
         ?bool $judgesByFindings = null,
         ?bool $readsReportFile = null,
+        ?array $notes = null,
     ): self {
         return new self(
             command: $this->command,
@@ -134,6 +150,7 @@ final readonly class StepPlan
             filtersDeprecations: $filtersDeprecations ?? $this->filtersDeprecations,
             judgesByFindings: $judgesByFindings ?? $this->judgesByFindings,
             readsReportFile: $readsReportFile ?? $this->readsReportFile,
+            notes: $notes ?? $this->notes,
         );
     }
 }

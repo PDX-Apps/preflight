@@ -6,9 +6,12 @@ namespace PdxApps\Preflight\Tests\Unit;
 
 use PdxApps\Preflight\Context;
 use PdxApps\Preflight\Mode;
+use PdxApps\Preflight\Parsing\CoverageParser;
 use PdxApps\Preflight\Parsing\JUnitParser;
 use PdxApps\Preflight\Process\StepPlan;
+use PdxApps\Preflight\Severity;
 use PdxApps\Preflight\Steps\Tests;
+use PdxApps\Preflight\Support\CoverageDriver;
 use PdxApps\Preflight\Support\Target;
 use PdxApps\Preflight\Support\TargetSet;
 use PdxApps\Preflight\Targeting;
@@ -19,9 +22,9 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Tests::class)]
 final class TestsStepTest extends TestCase
 {
-    private function context(TempProject $project, ?TargetSet $targets = null): Context
+    private function context(TempProject $project, ?TargetSet $targets = null, ?CoverageDriver $driver = null): Context
     {
-        return new Context($project->root, $targets ?? TargetSet::wholeProject());
+        return new Context($project->root, $targets ?? TargetSet::wholeProject(), $driver);
     }
 
     private function projectWith(string ...$binaries): TempProject
@@ -147,5 +150,108 @@ final class TestsStepTest extends TestCase
             ->plan($this->context($project), Mode::Check);
 
         $this->assertSame([['php', 'artisan', 'config:clear']], $plan->before);
+    }
+
+    // --- coverage ---
+
+    public function test_coverage_with_a_driver_drops_no_coverage_and_adds_report_flags(): void
+    {
+        $project = $this->projectWith('phpunit');
+
+        $plan = Tests::make()->runner('phpunit')
+            ->coverage(['clover' => 'build/coverage.xml', 'html' => 'build/coverage'])
+            ->plan($this->context($project, driver: CoverageDriver::Pcov), Mode::Check);
+
+        $this->assertNotContains('--no-coverage', $plan->command);
+        $this->assertContains('--coverage-clover=build/coverage.xml', $plan->command);
+        $this->assertContains('--coverage-html=build/coverage', $plan->command);
+        $this->assertSame([], $plan->notes, 'a present driver produces no warning');
+    }
+
+    public function test_text_coverage_with_a_null_path_goes_to_stdout(): void
+    {
+        $project = $this->projectWith('phpunit');
+
+        $plan = Tests::make()->runner('phpunit')->coverage(['text' => null])
+            ->plan($this->context($project, driver: CoverageDriver::Pcov), Mode::Check);
+
+        $this->assertContains('--coverage-text=php://stdout', $plan->command);
+    }
+
+    public function test_xdebug_driver_sets_the_coverage_mode_env(): void
+    {
+        $project = $this->projectWith('phpunit');
+
+        $plan = Tests::make()->runner('phpunit')->coverage(['clover' => 'c.xml'])
+            ->plan($this->context($project, driver: CoverageDriver::Xdebug), Mode::Check);
+
+        $this->assertSame(['XDEBUG_MODE' => 'coverage'], $plan->env);
+    }
+
+    public function test_coverage_without_a_driver_keeps_no_coverage_and_warns_without_failing(): void
+    {
+        $project = $this->projectWith('phpunit');
+
+        $plan = Tests::make()->runner('phpunit')->coverage(['clover' => 'c.xml'])
+            ->plan($this->context($project, driver: null), Mode::Check);
+
+        $this->assertContains('--no-coverage', $plan->command);
+        $this->assertNotContains('--coverage-clover=c.xml', $plan->command);
+        $this->assertCount(1, $plan->notes);
+        $this->assertSame(Severity::Warning, $plan->notes[0]->severity);
+        $this->assertFalse($plan->judgesByFindings, 'a missing driver must not turn the warning into a failure');
+    }
+
+    public function test_min_coverage_on_phpunit_emits_coverage_text_and_gates_by_findings(): void
+    {
+        $project = $this->projectWith('phpunit');
+
+        $plan = Tests::make()->runner('phpunit')->minCoverage(90)
+            ->plan($this->context($project, driver: CoverageDriver::Pcov), Mode::Check);
+
+        $this->assertContains('--coverage-text=php://stdout', $plan->command);
+        $this->assertTrue($plan->judgesByFindings);
+        $this->assertInstanceOf(CoverageParser::class, $plan->parser);
+    }
+
+    public function test_min_coverage_on_pest_uses_the_native_min_flag(): void
+    {
+        $project = $this->projectWith('pest', 'phpunit');
+
+        $plan = Tests::make()->runner('pest')->minCoverage(90)
+            ->plan($this->context($project, driver: CoverageDriver::Pcov), Mode::Check);
+
+        $this->assertContains('--coverage', $plan->command);
+        $this->assertContains('--min=90', $plan->command);
+        $this->assertFalse($plan->judgesByFindings, 'pest fails itself; no findings gate needed');
+        $this->assertInstanceOf(JUnitParser::class, $plan->parser);
+    }
+
+    public function test_auto_runner_picks_phpunit_when_coverage_is_on(): void
+    {
+        $project = $this->projectWith('paratest', 'pest', 'phpunit');
+
+        $plan = Tests::make()->coverage(['clover' => 'c.xml'])
+            ->plan($this->context($project, driver: CoverageDriver::Pcov), Mode::Check);
+
+        $this->assertSame($project->root . '/vendor/bin/phpunit', $plan->command[0]);
+    }
+
+    public function test_coverage_rejects_an_unknown_format(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Tests::make()->coverage(['lcov' => 'c.info']);
+    }
+
+    public function test_coverage_rejects_a_non_text_format_without_a_path(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Tests::make()->coverage(['clover' => null]);
+    }
+
+    public function test_min_coverage_rejects_an_out_of_range_percentage(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Tests::make()->minCoverage(150);
     }
 }

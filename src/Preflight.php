@@ -11,6 +11,7 @@ use PdxApps\Preflight\Result\RunResult;
 use PdxApps\Preflight\Runner\SequentialRunner;
 use PdxApps\Preflight\Runner\SymfonyProcessExecutor;
 use PdxApps\Preflight\Steps\StepRegistry;
+use PdxApps\Preflight\Support\CoverageDriver;
 use PdxApps\Preflight\Support\ProjectRoot;
 use PdxApps\Preflight\Support\TargetSet;
 
@@ -65,7 +66,7 @@ final readonly class Preflight
      */
     public function run(Mode $mode, ?TargetSet $targets = null): RunResult
     {
-        $context = new Context($this->projectRoot, $targets ?? TargetSet::wholeProject());
+        $context = new Context($this->projectRoot, $targets ?? TargetSet::wholeProject(), CoverageDriver::detect());
         $runner = new SequentialRunner($this->executor, failFast: $this->configuration->failFast);
 
         // With no explicit steps configured, fall back to every installed built-in.
