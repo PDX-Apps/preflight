@@ -267,6 +267,17 @@ final class Tests extends AbstractStep
         return $plan;
     }
 
+    /**
+     * The coverage bundle for a run that produces no coverage — tests run normally with
+     * `--no-coverage`, carrying an optional advisory note and never gating.
+     *
+     * @return array{args: list<string>, env: array<string, string>, parser: OutputParser, note: ?Finding, gate: bool, wholeSuite: bool}
+     */
+    private function withoutCoverage(OutputParser $parser, ?Finding $note = null): array
+    {
+        return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => $note, 'gate' => false, 'wholeSuite' => false];
+    }
+
     private function coverageRequested(): bool
     {
         return $this->coverage !== [] || $this->minCoverage !== null || $this->minPatchCoverage !== null;
@@ -285,14 +296,14 @@ final class Tests extends AbstractStep
         $parser = new JUnitParser($context->projectRoot(), $this->name());
 
         if (! $this->coverageRequested()) {
-            return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => null, 'gate' => false, 'wholeSuite' => false];
+            return $this->withoutCoverage($parser);
         }
 
         $driver = $context->coverageDriver();
         if (!$driver instanceof \PdxApps\Preflight\Support\CoverageDriver) {
             // Safety net: coverage was asked for but no driver is active. Run the tests
             // (still a useful gate) without coverage, and warn rather than fail.
-            return ['args' => ['--no-coverage'], 'env' => [], 'parser' => $parser, 'note' => $this->noDriverWarning(), 'gate' => false, 'wholeSuite' => false];
+            return $this->withoutCoverage($parser, $this->noDriverWarning());
         }
 
         [$args, $parser, $gate] = $this->floorCoverageFor($isPest, $parser);
@@ -358,7 +369,7 @@ final class Tests extends AbstractStep
 
         $clover = $this->coverage['clover'] ?? null;
         if ($clover === null) {
-            return [...$inert, 'note' => $this->patchNoCloverWarning()];
+            return ['parser' => $parser, 'note' => $this->patchNoCloverWarning(), 'gate' => false, 'wholeSuite' => false];
         }
 
         $wrapped = new CoveragePatchParser(
