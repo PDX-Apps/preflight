@@ -30,7 +30,11 @@ return Preflight::configure()
         ComposerNormalize::class, // composer.json hygiene  (fixable, opt-in)
         Deptrac::class,           // architecture layers    (opt-in)
     ])
-    ->tune(Tests::make()->coverage([
-        'clover' => 'build/coverage.xml', // for Codecov/Coveralls + the gate
-        'html' => 'build/coverage',       // browsable report, uploaded as an artifact
-    ]));
+    ->tune(
+        Tests::make()
+            ->coverage([
+                'clover' => 'build/coverage.xml', // for Codecov/Coveralls + the gate
+                'html' => 'build/coverage',       // browsable report, uploaded as an artifact
+            ])
+            ->minCoverage(85), // currently ~91% line coverage; floor leaves headroom
+    );
