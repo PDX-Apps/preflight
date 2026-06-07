@@ -1,0 +1,50 @@
+# Architectural layers for Preflight's own source. Enforced by the (opt-in) Deptrac
+# step in preflight.php, so the project dogfoods architecture enforcement too.
+#
+# The dependency direction is one-way and downward:
+#
+#   Cli  ->  CommandSupport  ->  Engine  ->  Foundation
+#
+#   Foundation      pure value objects and enums (Finding, Severity, Result, ...) — depend on nothing
+#   Engine          the runner, steps, parsing, process, config, contracts, support
+#   CommandSupport  output and side-effects wired up by commands (Render, Report, Install, Diagnostics, Scope)
+#   Cli             the Console entry point — may use everything
+#
+# (The Process<->Parsing and Support<->Runner pairs reference each other; that's fine —
+# they live in the same Engine layer, where intra-layer dependencies are allowed.)
+deptrac:
+  paths:
+    - ./src
+
+  layers:
+    - name: Foundation
+      collectors:
+        - type: classNameRegex
+          value: '#^PdxApps\\Preflight\\(Finding|Severity|Mode|OutputFormat|Targeting|Result\\.+)$#'
+
+    - name: Engine
+      collectors:
+        - type: classNameRegex
+          value: '#^PdxApps\\Preflight\\(Context|Preflight|Config\\.+|Contracts\\.+|Parsing\\.+|Process\\.+|Runner\\.+|Steps\\.+|Support\\.+)$#'
+
+    - name: CommandSupport
+      collectors:
+        - type: classNameRegex
+          value: '#^PdxApps\\Preflight\\(Install\\.+|Diagnostics\\.+|Report\\.+|Render\\.+|Scope\\.+)$#'
+
+    - name: Cli
+      collectors:
+        - type: classNameRegex
+          value: '#^PdxApps\\Preflight\\Console\\.+$#'
+
+  ruleset:
+    Foundation: ~
+    Engine:
+      - Foundation
+    CommandSupport:
+      - Foundation
+      - Engine
+    Cli:
+      - Foundation
+      - Engine
+      - CommandSupport

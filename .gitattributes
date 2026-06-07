@@ -13,3 +13,5 @@
 /phpmd.xml          export-ignore
 /rector.php         export-ignore
 /pint.json          export-ignore
+/deptrac.yaml       export-ignore
+/preflight.php      export-ignore

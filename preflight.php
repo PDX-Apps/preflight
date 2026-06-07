@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+use PdxApps\Preflight\Preflight;
+use PdxApps\Preflight\Steps\ComposerNormalize;
+use PdxApps\Preflight\Steps\Deptrac;
+
+/*
+|--------------------------------------------------------------------------
+| Preflight runs on Preflight
+|--------------------------------------------------------------------------
+|
+| This is Preflight's own config — it dogfoods every built-in step, including
+| the two opt-in ones that aren't in the default set:
+|
+|   ComposerNormalize  keeps composer.json tidy        (ergebnis/composer-normalize plugin)
+|   Deptrac            enforces the layer boundaries    (see deptrac.yaml)
+|
+| addSteps() keeps the eight auto-detected defaults and appends the opt-in pair,
+| so we don't restate the whole pipeline. Each step still runs only if its tool
+| is installed.
+*/
+
+return Preflight::configure()->addSteps([
+    ComposerNormalize::class, // composer.json hygiene  (fixable, opt-in)
+    Deptrac::class,           // architecture layers    (opt-in)
+]);
