@@ -12,6 +12,9 @@ composer.lock
 .preflight.cache.json
 .deptrac.cache
 
+# Coverage output (Tests step)
+/build
+
 # OS / editor
 .DS_Store
 .idea/

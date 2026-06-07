@@ -27,7 +27,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          coverage: none
+          coverage: pcov # a driver for the Tests step's coverage reports
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -49,6 +49,15 @@ jobs:
         with:
           name: preflight-report
           path: preflight-report.json
+
+      # Coverage reports produced by the Tests step (see preflight.php) — same run, no re-test.
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: build/coverage
+          if-no-files-found: ignore
 
       # Publish findings to the Security tab as SARIF (written by the run above, even on failure).
       - name: Upload SARIF

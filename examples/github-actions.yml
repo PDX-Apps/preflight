@@ -25,7 +25,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          coverage: none
+          # A coverage driver is needed for the Tests step's coverage reports. Use 'none'
+          # if you don't run coverage; pcov is the fastest option when you do.
+          coverage: pcov
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -33,6 +35,11 @@ jobs:
       # One run, every output. --format=github annotates the PR diff and sets the exit code;
       # --write renders the same result to the job summary and a SARIF file; --report keeps a
       # JSON artifact. The --write/--report targets do not re-run the checks.
+      #
+      # Coverage reports come from the Tests step config in your preflight.php, e.g.:
+      #     Tests::make()->coverage(['clover' => 'build/coverage.xml', 'html' => 'build/coverage'])
+      #         ->minCoverage(90)
+      # Preflight measures coverage in the same run (no separate test invocation).
       - name: Run Preflight
         run: |
           vendor/bin/preflight \
@@ -47,6 +54,16 @@ jobs:
         with:
           name: preflight-report
           path: preflight-report.json
+
+      # Coverage artifact (produced by the Tests step when coverage is configured in
+      # preflight.php). Upload it for download, or send build/coverage.xml to Codecov/Coveralls.
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: build/coverage
+          if-no-files-found: ignore
 
       # Publish findings to the Security tab (Code scanning). Needs code scanning available —
       # public repos have it; private repos need GitHub Advanced Security. Drop this step (and
