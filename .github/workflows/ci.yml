@@ -51,12 +51,13 @@ jobs:
           path: preflight-report.json
 
       # Coverage reports produced by the Tests step (see preflight.php) — same run, no re-test.
+      # Uploads both the Clover XML (build/coverage.xml) and the browsable HTML (build/coverage/).
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: build/coverage
+          path: build
           if-no-files-found: ignore
 
       # Publish findings to the Security tab as SARIF (written by the run above, even on failure).
