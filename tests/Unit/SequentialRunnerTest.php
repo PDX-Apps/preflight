@@ -233,6 +233,37 @@ final class SequentialRunnerTest extends TestCase
         $this->assertStringNotContainsString('{REPORT_FILE}', $arg);
     }
 
+    public function test_deprecation_lines_are_stripped_from_the_output_before_parsing(): void
+    {
+        $noisy = "PHP Deprecated: old thing\nreal finding here\nDeprecated: another\nsecond line";
+        $executor = (new FakeProcessExecutor())->queueSuccess($noisy);
+        $runner = new SequentialRunner($executor);
+
+        $plan = StepPlan::command('phpmd', ['phpmd'])->filteringDeprecations();
+        $result = $runner->run([new FakeStep('phpmd', $plan)], $this->context(), Mode::Check);
+
+        $output = $result->steps[0]->output;
+        $this->assertStringNotContainsString('PHP Deprecated:', $output);
+        $this->assertStringNotContainsString('Deprecated:', $output);
+        $this->assertStringContainsString('real finding here', $output);
+        $this->assertStringContainsString('second line', $output);
+    }
+
+    public function test_a_missing_tool_without_a_require_hint_reports_a_plain_message(): void
+    {
+        $executor = new FakeProcessExecutor();
+        $runner = new SequentialRunner($executor);
+
+        // A vendor-bin tool with no require hint that doesn't exist on disk at /project.
+        $step = new FakeStep('mago', StepPlan::command('mago', ['mago']), tool: Tool::vendorBin('mago'));
+        $result = $runner->run([$step], $this->context(), Mode::Check);
+
+        $this->assertSame(StepStatus::MissingTool, $result->steps[0]->status);
+        $reason = (string) $result->steps[0]->skipReason;
+        $this->assertStringContainsString('"mago" is not installed.', $reason);
+        $this->assertStringNotContainsString('composer require', $reason, 'no hint means no require advice');
+    }
+
     public function test_the_report_file_contents_are_handed_to_the_parser_then_deleted(): void
     {
         $captured = null;

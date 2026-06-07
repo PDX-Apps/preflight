@@ -10,6 +10,8 @@ use PdxApps\Preflight\Tests\Support\FakeProcessExecutor;
 use PdxApps\Preflight\Tests\Support\TempProject;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Helper\HelperSet;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Tester\CommandTester;
 
 #[CoversClass(InstallCommand::class)]
@@ -17,7 +19,11 @@ final class InstallCommandTest extends TestCase
 {
     private function tester(TempProject $project, FakeProcessExecutor $executor): CommandTester
     {
-        return new CommandTester(new InstallCommand($project->root, $executor));
+        $command = new InstallCommand($project->root, $executor);
+        // The interactive prompts ask for the "question" helper, which a bare command lacks.
+        $command->setHelperSet(new HelperSet(['question' => new QuestionHelper()]));
+
+        return new CommandTester($command);
     }
 
     /**
@@ -185,6 +191,80 @@ final class InstallCommandTest extends TestCase
 
         $this->tester($project, new FakeProcessExecutor())->execute(['--yes' => true, '--force' => true], ['interactive' => false]);
         $this->assertNotSame('# my config', file_get_contents($project->root . '/phpstan.neon'));
+    }
+
+    public function test_without_yes_a_non_interactive_run_explains_how_to_apply_and_changes_nothing(): void
+    {
+        $project = new TempProject();
+        $project->file('composer.json', '{}');
+        $executor = new FakeProcessExecutor();
+
+        $tester = $this->tester($project, $executor);
+        $tester->execute([], ['interactive' => false]);
+
+        $this->assertSame(0, $tester->getStatusCode());
+        $this->assertSame([], $executor->executed, 'nothing is installed without confirmation');
+        $this->assertStringContainsString('Pass --yes to apply', $tester->getDisplay());
+        $this->assertFileDoesNotExist($project->root . '/phpstan.neon');
+    }
+
+    public function test_an_interactive_yes_confirmation_proceeds_with_the_install(): void
+    {
+        $project = new TempProject();
+        $project->file('composer.json', '{}');
+        $executor = new FakeProcessExecutor();
+
+        $tester = $this->tester($project, $executor);
+        // Runner choice (default phpunit), then the "Proceed?" confirmation.
+        $tester->setInputs(['phpunit', 'yes']);
+        $tester->execute(['--runner' => 'phpunit'], ['interactive' => true]);
+
+        $this->assertSame(0, $tester->getStatusCode());
+        $this->assertContains('phpstan/phpstan:^2', $this->requireCommand($executor));
+    }
+
+    public function test_an_interactive_declined_confirmation_aborts(): void
+    {
+        $project = new TempProject();
+        $project->file('composer.json', '{}');
+        $executor = new FakeProcessExecutor();
+
+        $tester = $this->tester($project, $executor);
+        $tester->setInputs(['no']);
+        $tester->execute(['--runner' => 'phpunit', '--with-phpmd' => true], ['interactive' => true]);
+
+        $this->assertSame(0, $tester->getStatusCode());
+        $this->assertSame([], $executor->executed, 'declining must install nothing');
+        $this->assertStringContainsString('Aborted.', $tester->getDisplay());
+    }
+
+    public function test_the_interactive_runner_prompt_selects_pest(): void
+    {
+        $project = new TempProject();
+        $project->file('composer.json', '{}');
+        $executor = new FakeProcessExecutor();
+
+        $tester = $this->tester($project, $executor);
+        // Runner prompt (pest), PHPMD opt-in prompt (no), then confirm the install.
+        $tester->setInputs(['pest', 'no', 'yes']);
+        $tester->execute([], ['interactive' => true]);
+
+        $require = $this->requireCommand($executor);
+        $this->assertContains('pestphp/pest:^3', $require);
+    }
+
+    public function test_the_interactive_phpmd_prompt_opts_in(): void
+    {
+        $project = new TempProject();
+        $project->file('composer.json', '{}');
+        $executor = new FakeProcessExecutor();
+
+        $tester = $this->tester($project, $executor);
+        // Runner choice, PHPMD opt-in, then proceed.
+        $tester->setInputs(['phpunit', 'yes', 'yes']);
+        $tester->execute([], ['interactive' => true]);
+
+        $this->assertContains('phpmd/phpmd:^3@dev', $this->requireCommand($executor));
     }
 
     public function test_a_failed_composer_require_aborts_before_scaffolding(): void

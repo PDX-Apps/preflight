@@ -154,7 +154,9 @@ final readonly class SequentialRunner implements Runner
 
         $reportFile = tempnam(sys_get_temp_dir(), 'preflight-report-');
         if ($reportFile === false) {
+            // @codeCoverageIgnoreStart — only when the temp dir is unwritable, not reproducible in tests.
             return new ProcessResult(1, '', 'Could not create a temporary report file.');
+            // @codeCoverageIgnoreEnd
         }
 
         try {
