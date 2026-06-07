@@ -104,7 +104,8 @@ locations the tools already use.
 |---|---|
 | `--fix` | Apply fixes instead of only checking (fixable steps). |
 | `--check` | Force check-only — overrides a `fixByDefault()` config. |
-| `--format=<fmt>` | `auto` (default), `human`, `json`, `agent`, `github`, `sarif`, `markdown`. |
+| `--format=<fmt>` | Console output: `auto` (default), `human`, `json`, `agent`, `github`, `sarif`, `markdown`. |
+| `--write=<fmt>:<file>` | **Also** render to a file (repeatable). Run once, emit many — e.g. `--write=sarif:preflight.sarif --write=markdown:summary.md`. |
 | `--fail-fast` | Stop at the first failing step. |
 | `--files=a.php,b.php` | Check only these files. |
 | `--dirty` | Check only working-tree changes (staged + unstaged + untracked). |
@@ -304,7 +305,24 @@ Reference it like any built-in: `->withSteps([..., ComposerValidate::class])`. I
 - **sarif** — SARIF 2.1.0 JSON, grouped into one run per tool. For GitHub code scanning
   (upload via `github/codeql-action/upload-sarif`) and other SARIF consumers.
 - **markdown** — a per-step summary table plus a findings list. Ideal for a GitHub Actions
-  job summary (`preflight --format=markdown >> "$GITHUB_STEP_SUMMARY"`).
+  job summary (`--write=markdown:"$GITHUB_STEP_SUMMARY"`).
+
+### One run, many outputs
+
+The checks are the slow part, so don't run them once per format. `--format` controls the
+console; `--write=<fmt>:<file>` renders the **same result** to a file and is repeatable. A
+single CI step can annotate the PR, write the job summary, emit SARIF, and keep a JSON
+report — all from one execution:
+
+```bash
+preflight \
+  --format=github \
+  --write=markdown:"$GITHUB_STEP_SUMMARY" \
+  --write=sarif:preflight.sarif \
+  --report=preflight-report.json
+```
+
+See [`examples/github-actions.yml`](examples/github-actions.yml) for the full workflow.
 
 ## Reports
 

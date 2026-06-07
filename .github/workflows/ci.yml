@@ -1,8 +1,9 @@
 # Preflight's own CI — it runs itself on its own code (dogfooding).
 #
-# On pull requests this emits GitHub annotations inline on the diff (--format=github);
-# it also uploads a SARIF report to the Security tab to exercise that path. The build
-# fails if any check fails.
+# A single `preflight` invocation runs the checks once and fans out to every output:
+# inline PR annotations (--format=github), a job-summary table (--write=markdown),
+# a SARIF report for the Security tab (--write=sarif), and a JSON artifact (--report).
+# The build fails if any check fails; the uploads still run (if: always()).
 name: CI
 
 on:
@@ -31,15 +32,16 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      # Run every check. --format=github puts failures inline on the PR diff; the
-      # exit code fails the job. --report keeps a JSON artifact regardless of outcome.
+      # One run, every output. --format=github puts failures inline on the PR diff and sets
+      # the exit code; --write renders the same result to the job summary and a SARIF file;
+      # --report keeps a JSON artifact. None of the --write/--report targets re-run the checks.
       - name: Preflight
-        run: php bin/preflight --format=github --report=preflight-report.json
-
-      # A per-step summary table on the run's Summary page.
-      - name: Job summary
-        if: always()
-        run: php bin/preflight --format=markdown >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          php bin/preflight \
+            --format=github \
+            --write=markdown:"$GITHUB_STEP_SUMMARY" \
+            --write=sarif:preflight.sarif \
+            --report=preflight-report.json
 
       - name: Upload run report
         if: always()
@@ -48,24 +50,9 @@ jobs:
           name: preflight-report
           path: preflight-report.json
 
-  # Publish findings to the Security tab as SARIF — on main (baseline) and on PRs.
-  code-scanning:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          coverage: none
-
-      - run: composer install --no-interaction --no-progress --prefer-dist
-
-      # Produce SARIF even when checks fail (so findings still reach the Security tab).
-      - name: Preflight (SARIF)
-        run: php bin/preflight --format=sarif > preflight.sarif || true
-
+      # Publish findings to the Security tab as SARIF (written by the run above, even on failure).
       - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: preflight.sarif

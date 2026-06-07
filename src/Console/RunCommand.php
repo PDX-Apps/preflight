@@ -29,6 +29,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 
 /**
  * The default command: load the project's config, run the resolved steps over the
@@ -55,6 +56,13 @@ final class RunCommand extends Command
             ->addOption('fix', null, InputOption::VALUE_NONE, 'Apply fixes instead of only checking.')
             ->addOption('check', null, InputOption::VALUE_NONE, 'Force check-only (overrides a fix-by-default config).')
             ->addOption('format', 'f', InputOption::VALUE_REQUIRED, 'Output format: auto, human, json, agent, github, sarif, markdown.')
+            ->addOption(
+                'write',
+                null,
+                InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Also render the result to a file as FORMAT:PATH (repeatable). The checks run once; '
+                . 'e.g. --write=markdown:summary.md --write=sarif:preflight.sarif.',
+            )
             ->addOption('fail-fast', null, InputOption::VALUE_NONE, 'Stop at the first failing step.')
             ->addOption('files', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of files to check.')
             ->addOption('dirty', null, InputOption::VALUE_NONE, 'Only check files changed in the working tree.')
@@ -100,6 +108,7 @@ final class RunCommand extends Command
         $format = $this->resolveFormat($input, $configuration->defaultFormat);
         new RendererRegistry()->for($format, isTty: $output->isDecorated())->render($result, $output);
 
+        $this->writeOutputs($input, $result);
         $cache->store($hash, $result->isSuccess());
         $this->writeReport($input, $result, $mode);
 
@@ -130,6 +139,62 @@ final class RunCommand extends Command
             $candidates,
             static fn (string $file): bool => is_file(rtrim($root, '/') . '/' . $file),
         ));
+    }
+
+    /**
+     * Render the same result to each `--write=FORMAT:PATH` target, so one invocation can emit
+     * several formats (e.g. github to the console, markdown to the job summary, sarif to a
+     * file) without re-running the checks. Each file is truncated; parent dirs are created.
+     */
+    private function writeOutputs(InputInterface $input, RunResult $result): void
+    {
+        /** @var list<string> $specs */
+        $specs = $input->getOption('write');
+        if ($specs === []) {
+            return;
+        }
+
+        $registry = new RendererRegistry();
+        foreach ($specs as $spec) {
+            [$format, $path] = $this->parseWriteSpec($spec);
+
+            $directory = dirname($path);
+            if (! is_dir($directory)) {
+                mkdir($directory, 0o777, true);
+            }
+
+            $handle = fopen($path, 'w');
+            if ($handle === false) {
+                throw new \RuntimeException("Could not open --write target for writing: {$path}");
+            }
+
+            try {
+                $registry->for($format)->render($result, new StreamOutput($handle));
+            } finally {
+                fclose($handle);
+            }
+        }
+    }
+
+    /**
+     * Parse a `--write` value of the form FORMAT:PATH (split on the first colon, so absolute
+     * Windows paths keep their drive letter).
+     *
+     * @return array{0: OutputFormat, 1: string}
+     */
+    private function parseWriteSpec(string $spec): array
+    {
+        $colon = strpos($spec, ':');
+        if ($colon === false || $colon === 0) {
+            throw new \InvalidArgumentException("--write expects FORMAT:PATH, got: {$spec}");
+        }
+
+        $path = substr($spec, $colon + 1);
+        if ($path === '') {
+            throw new \InvalidArgumentException("--write expects a non-empty path: {$spec}");
+        }
+
+        return [OutputFormat::from(substr($spec, 0, $colon)), $path];
     }
 
     /**

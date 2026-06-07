@@ -224,6 +224,46 @@ final class RunCommandTest extends TestCase
         $this->assertFileDoesNotExist($project->root . '/preflight.json');
     }
 
+    // --- multi-output (--write) ---
+
+    public function test_write_renders_extra_formats_to_files_from_a_single_run(): void
+    {
+        $project = $this->projectWithPint();
+        // The auto-detected set here is Pint + ComposerAudit (composer is always present), so
+        // a single run executes exactly two commands. Two --write targets must add none.
+        $executor = (new FakeProcessExecutor())
+            ->queueSuccess('{"result":"pass"}')
+            ->queueSuccess('{"advisories":[]}');
+
+        $sarif = $project->root . '/out/preflight.sarif';
+        $summary = $project->root . '/out/summary.md';
+
+        $tester = $this->tester($project, $executor);
+        $exit = $tester->execute(
+            ['--format' => 'github', '--write' => ["sarif:{$sarif}", "markdown:{$summary}"]],
+            ['decorated' => false],
+        );
+
+        $this->assertSame(0, $exit);
+        $this->assertCount(2, $executor->executed, 'the checks run once regardless of output count');
+
+        $this->assertFileExists($sarif);
+        $sarifDoc = json_decode((string) file_get_contents($sarif), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertArrayHasKey('runs', $sarifDoc);
+
+        $this->assertFileExists($summary);
+        $this->assertStringContainsString('Preflight', (string) file_get_contents($summary));
+    }
+
+    public function test_write_rejects_a_spec_without_a_path(): void
+    {
+        $project = $this->projectWithPint();
+        $executor = (new FakeProcessExecutor())->queueSuccess('{"result":"pass"}');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->tester($project, $executor)->execute(['--write' => ['sarif']], ['decorated' => false]);
+    }
+
     // --- skip-if-fresh ---
 
     public function test_a_run_writes_the_freshness_cache(): void

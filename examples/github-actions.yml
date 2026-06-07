@@ -1,8 +1,9 @@
 # Preflight on GitHub Actions.
 #
-# Copy to .github/workflows/preflight.yml in your project. This showcases three
-# integrations — inline PR annotations, a job-summary table, and SARIF code scanning.
-# Each `preflight` invocation runs the checks, so trim to just the outputs you want.
+# Copy to .github/workflows/preflight.yml in your project. A single invocation runs the
+# checks once and fans out to every output: inline PR annotations, a job-summary table,
+# a SARIF report for the Security tab, and a JSON artifact. Drop any --write/--report you
+# don't want — they don't re-run the checks, so keeping them is cheap.
 name: Preflight
 
 on:
@@ -12,7 +13,7 @@ on:
 
 permissions:
   contents: read
-  security-events: write # for the SARIF upload (code-scanning job)
+  security-events: write # for the SARIF upload
 
 jobs:
   preflight:
@@ -29,16 +30,16 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      # --format=github puts failures inline on the PR diff; the exit code fails the job.
-      # --report writes a JSON artifact (uploaded below).
+      # One run, every output. --format=github annotates the PR diff and sets the exit code;
+      # --write renders the same result to the job summary and a SARIF file; --report keeps a
+      # JSON artifact. The --write/--report targets do not re-run the checks.
       - name: Run Preflight
-        run: vendor/bin/preflight --format=github --report=preflight-report.json
-
-      # A per-step summary table on the run's summary page. This runs the checks again in
-      # markdown; if you'd rather not re-run, make this your only Preflight step.
-      - name: Job summary
-        if: always()
-        run: vendor/bin/preflight --format=markdown >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          vendor/bin/preflight \
+            --format=github \
+            --write=markdown:"$GITHUB_STEP_SUMMARY" \
+            --write=sarif:preflight.sarif \
+            --report=preflight-report.json
 
       - name: Upload report
         if: always()
@@ -47,25 +48,11 @@ jobs:
           name: preflight-report
           path: preflight-report.json
 
-  # Publish findings to the Security tab (Code scanning) as SARIF. Needs code scanning
-  # available — public repos have it; private repos need GitHub Advanced Security.
-  code-scanning:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          coverage: none
-
-      - run: composer install --no-interaction --no-progress --prefer-dist
-
-      # Produce SARIF even when checks fail, so findings still reach the Security tab.
-      - name: Preflight (SARIF)
-        run: vendor/bin/preflight --format=sarif > preflight.sarif || true
-
+      # Publish findings to the Security tab (Code scanning). Needs code scanning available —
+      # public repos have it; private repos need GitHub Advanced Security. Drop this step (and
+      # the security-events permission) if you don't want it.
       - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: preflight.sarif
