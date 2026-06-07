@@ -52,6 +52,30 @@ final class ConfigurationBuilderTest extends TestCase
         $this->assertSame('phpstan.neon', $config->steps[0]->configReference());
     }
 
+    public function test_add_steps_normalizes_class_strings_and_records_them_as_added(): void
+    {
+        $config = (new ConfigurationBuilder())
+            ->addSteps([ConfigurableStep::class, SecondConfigurableStep::class])
+            ->build();
+
+        $this->assertNull($config->steps); // auto-detection stays on
+        $this->assertCount(2, $config->added);
+        $this->assertInstanceOf(ConfigurableStep::class, $config->added[0]);
+        $this->assertInstanceOf(SecondConfigurableStep::class, $config->added[1]);
+    }
+
+    public function test_add_steps_accepts_instances_and_accumulates_across_calls(): void
+    {
+        $configured = ConfigurableStep::make()->config('phpstan.neon');
+        $config = (new ConfigurationBuilder())
+            ->addSteps([$configured])
+            ->addSteps([SecondConfigurableStep::class])
+            ->build();
+
+        $this->assertSame($configured, $config->added[0]);
+        $this->assertInstanceOf(SecondConfigurableStep::class, $config->added[1]);
+    }
+
     public function test_tune_records_an_overlay_keyed_by_class(): void
     {
         $tuned = ConfigurableStep::make()->config('tuned.neon');

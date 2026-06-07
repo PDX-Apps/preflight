@@ -28,17 +28,19 @@ return Preflight::configure()
 | Method | Effect |
 |---|---|
 | `->withSteps([...])` | Set the exact steps **and order**. Items are `Foo::class` (defaults) or `Foo::make()->...` (configured). Omit entirely to auto-detect every installed default. |
+| `->addSteps([...])` | Keep the base set (defaults or `withSteps`) and **append** extra steps — e.g. the opt-in `ComposerNormalize`/`Deptrac` — without re-listing it. |
 | `->tune(Step)` | Keep the auto-detected default set but reconfigure one step. |
 | `->without(Foo::class)` | Drop one step from the default set. |
 | `->withPaths([...])` | Directories to scan (default: auto). |
 | `->withModules(dir, app, tests)` | Enable `--module` scoping (see below). |
 | `->failFast()` | Stop at the first failing step. |
 
-`tune()`/`without()` adjust the **default** set; `withSteps()` replaces it. Use one approach
-or the other.
+`addSteps()`/`tune()`/`without()` adjust the **default** set; `withSteps()` replaces it. Use
+one approach or the other.
 
 ```php
 return Preflight::configure()
+    ->addSteps([Deptrac::class])                  // add the opt-in steps, keep the rest
     ->tune(Psalm::make()->config('psalm.xml'))   // tweak one, keep the rest
     ->without(Phpmd::class)                        // drop one
     ->failFast();

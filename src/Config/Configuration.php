@@ -12,16 +12,18 @@ use PdxApps\Preflight\OutputFormat;
  * needs to plan a run, independent of any single invocation.
  *
  * Steps are immutable {@see Step} instances. `steps === null` means "auto-detect the
- * default set"; an explicit (possibly empty) list replaces it. `tunes` overlay settings
- * onto whichever base set applies (matched by class), and `without` drops classes —
- * see {@see resolveSteps()}. `paths === null` means auto-detect paths; `modules === null`
- * disables module discovery.
+ * default set"; an explicit (possibly empty) list replaces it. `added` are extra steps
+ * appended to whichever base set applies (defaults or explicit) without disabling
+ * auto-detection. `tunes` overlay settings onto the set (matched by class), and `without`
+ * drops classes — see {@see resolveSteps()}. `paths === null` means auto-detect paths;
+ * `modules === null` disables module discovery.
  */
 final readonly class Configuration
 {
     /**
      * @param  list<Step>|null  $steps
      * @param  list<string>  $skip
+     * @param  list<Step>  $added
      * @param  array<class-string<Step>, Step>  $tunes
      * @param  list<class-string<Step>>  $without
      * @param  list<string>|null  $paths
@@ -30,6 +32,7 @@ final readonly class Configuration
         public ?array $steps = null,
         public ?ModuleConfig $modules = new ModuleConfig('Modules', 'app', 'tests'),
         public array $skip = [],
+        public array $added = [],
         public array $tunes = [],
         public array $without = [],
         public bool $failFast = false,
@@ -49,6 +52,7 @@ final readonly class Configuration
             steps: $this->steps,
             modules: $this->modules,
             skip: $this->skip,
+            added: $this->added,
             tunes: $this->tunes,
             without: $this->without,
             failFast: $failFast,
@@ -72,9 +76,10 @@ final readonly class Configuration
     /**
      * Resolve the final ordered list of steps to run.
      *
-     * Starts from the explicit list, or the given auto-detected set when none was listed.
-     * Removes any class named in `without`, replaces matching classes with their tuned
-     * instance (in place), and appends tuned classes not already present.
+     * Starts from the explicit list, or the given auto-detected set when none was listed,
+     * then appends any `added` steps (a class already in the base keeps its position and
+     * instance). Removes any class named in `without`, replaces matching classes with their
+     * tuned instance (in place), and appends tuned classes not already present.
      *
      * @param  list<Step>  $autoSteps
      * @return list<Step>
@@ -84,12 +89,12 @@ final readonly class Configuration
         $base = $this->steps ?? $autoSteps;
 
         $resolved = [];
-        foreach ($base as $step) {
+        foreach ([...$base, ...$this->added] as $step) {
             $class = $step::class;
             if (in_array($class, $this->without, true)) {
                 continue;
             }
-            $resolved[$class] = $this->tunes[$class] ?? $step;
+            $resolved[$class] = $this->tunes[$class] ?? $resolved[$class] ?? $step;
         }
 
         foreach ($this->tunes as $class => $step) {

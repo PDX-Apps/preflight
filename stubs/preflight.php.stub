@@ -37,6 +37,7 @@ use PdxApps\Preflight\Preflight;
 |       ComposerAudit::make()->abandoned('ignore'),
 |       Tests::make()->before(['php', 'artisan', 'config:clear']),
 |   ])
+|   ->addSteps([Deptrac::class])                  // keep defaults, append opt-in steps
 |   ->tune(Psalm::make()->config('psalm.xml'))    // tweak one, keep the rest
 |   ->without(Phpmd::class)                        // drop one
 |   ->withPaths(['app', 'src'])                    // what to scan

@@ -139,8 +139,8 @@ Tests::make()->runner('pest')->filter('Billing')->before(['php', 'artisan', 'con
 ## Optional built-in steps
 
 These ship with Preflight but are **not** in the default set — add them in `preflight.php`
-with `->withSteps([..., TheStep::class])`. Each skips with an install hint if its tool isn't
-installed.
+with `->addSteps([TheStep::class])` (keeps the auto-detected defaults) or by listing them in
+`->withSteps([...])`. Each skips with an install hint if its tool isn't installed.
 
 ### `composer-normalize` — Composer Normalize
 
@@ -152,7 +152,7 @@ Keeps `composer.json` sorted and consistently formatted. **Check + fix.** Runs t
 composer require --dev ergebnis/composer-normalize
 ```
 ```php
-->withSteps([..., ComposerNormalize::class])
+->addSteps([ComposerNormalize::class])
 ```
 
 It's opt-in because it's a Composer **plugin** — installing it means allow-listing it to run
@@ -168,7 +168,7 @@ violation is an error finding with file + line.
 composer require --dev deptrac/deptrac
 ```
 ```php
-->withSteps([..., Deptrac::class])
+->addSteps([Deptrac::class])
 ```
 
 It's opt-in because it only does something once you've defined an architecture (the depfile).

@@ -19,8 +19,9 @@ use PdxApps\Preflight\Steps\AbstractStep;
  *         ->tune(Psalm::make()->config('psalm.xml'))                       // overlay onto the set
  *         ->without(Phpmd::class);                                         // drop one
  *
- * Use {@see withSteps()} to take full control of the set and order; use {@see tune()} /
- * {@see without()} to adjust the default (auto-detected) set without re-listing it.
+ * Use {@see withSteps()} to take full control of the set and order; use {@see addSteps()},
+ * {@see tune()} / {@see without()} to adjust the default (auto-detected) set without
+ * re-listing it.
  */
 final class ConfigurationBuilder
 {
@@ -34,6 +35,9 @@ final class ConfigurationBuilder
 
     /** @var list<Step>|null */
     private ?array $steps = null;
+
+    /** @var list<Step> */
+    private array $added = [];
 
     /** @var array<class-string<Step>, Step> */
     private array $tunes = [];
@@ -97,6 +101,26 @@ final class ConfigurationBuilder
     public function withSteps(array $steps): self
     {
         $this->steps = array_map($this->normalize(...), $steps);
+
+        return $this;
+    }
+
+    /**
+     * Append extra steps to whichever base set applies — the auto-detected defaults, or an
+     * explicit {@see withSteps()} list — without re-listing it. Use this for "the defaults
+     * plus a couple more", e.g. the opt-in steps:
+     *
+     *     return Preflight::configure()->addSteps([ComposerNormalize::class, Deptrac::class]);
+     *
+     * Each entry is a step class (defaults) or a configured instance, added in order after
+     * the base set. A class already in the base keeps its position and instance; use
+     * {@see tune()} to reconfigure it.
+     *
+     * @param  list<class-string<Step>|Step>  $steps
+     */
+    public function addSteps(array $steps): self
+    {
+        $this->added = [...$this->added, ...array_map($this->normalize(...), $steps)];
 
         return $this;
     }
@@ -181,6 +205,7 @@ final class ConfigurationBuilder
             steps: $this->steps,
             modules: $this->modules,
             skip: $this->skip,
+            added: $this->added,
             tunes: $this->tunes,
             without: $this->without,
             failFast: $this->failFast,

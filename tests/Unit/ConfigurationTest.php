@@ -23,6 +23,7 @@ final class ConfigurationTest extends TestCase
         $this->assertInstanceOf(ModuleConfig::class, $config->modules);
         $this->assertSame([], $config->skip);
         $this->assertNull($config->steps);
+        $this->assertSame([], $config->added);
         $this->assertSame([], $config->tunes);
         $this->assertSame([], $config->without);
         $this->assertFalse($config->failFast);
@@ -62,6 +63,60 @@ final class ConfigurationTest extends TestCase
         $config = new Configuration();
 
         $this->assertSame([$auto], $config->resolveSteps(autoSteps: [$auto]));
+    }
+
+    public function test_added_steps_are_appended_after_the_auto_detected_base(): void
+    {
+        $auto = ConfigurableStep::make();
+        $extra = SecondConfigurableStep::make();
+        $config = new Configuration(added: [$extra]);
+
+        $this->assertSame([$auto, $extra], $config->resolveSteps(autoSteps: [$auto]));
+    }
+
+    public function test_added_steps_are_appended_after_an_explicit_set(): void
+    {
+        $a = ConfigurableStep::make();
+        $extra = SecondConfigurableStep::make();
+        $config = new Configuration(steps: [$a], added: [$extra]);
+
+        $this->assertSame([$a, $extra], $config->resolveSteps(autoSteps: []));
+    }
+
+    public function test_an_added_step_already_in_the_base_keeps_its_position_and_instance(): void
+    {
+        $base = [ConfigurableStep::make(), SecondConfigurableStep::make()];
+        $config = new Configuration(added: [ConfigurableStep::make()]);
+
+        $resolved = $config->resolveSteps(autoSteps: $base);
+
+        $this->assertSame($base, $resolved);
+    }
+
+    public function test_without_removes_an_added_step(): void
+    {
+        $config = new Configuration(
+            added: [SecondConfigurableStep::make()],
+            without: [SecondConfigurableStep::class],
+        );
+
+        $resolved = $config->resolveSteps(autoSteps: [ConfigurableStep::make()]);
+
+        $this->assertCount(1, $resolved);
+        $this->assertInstanceOf(ConfigurableStep::class, $resolved[0]);
+    }
+
+    public function test_a_tune_reconfigures_an_added_step(): void
+    {
+        $tuned = SecondConfigurableStep::make()->config('tuned.neon');
+        $config = new Configuration(
+            added: [SecondConfigurableStep::make()],
+            tunes: [SecondConfigurableStep::class => $tuned],
+        );
+
+        $resolved = $config->resolveSteps(autoSteps: [ConfigurableStep::make()]);
+
+        $this->assertSame($tuned, $resolved[1]);
     }
 
     public function test_without_removes_a_step_by_class_from_the_resolved_set(): void
