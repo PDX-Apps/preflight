@@ -1,5 +1,12 @@
 # Preflight
 
+[![CI](https://github.com/PDX-Apps/preflight/actions/workflows/ci.yml/badge.svg)](https://github.com/PDX-Apps/preflight/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/PDX-Apps/preflight/graph/badge.svg)](https://codecov.io/gh/PDX-Apps/preflight)
+[![Packagist Version](https://img.shields.io/packagist/v/pdxapps/preflight)](https://packagist.org/packages/pdxapps/preflight)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/pdxapps/preflight)](https://packagist.org/packages/pdxapps/preflight)
+[![PHP Version](https://img.shields.io/packagist/php-v/pdxapps/preflight?logo=php&logoColor=white)](composer.json)
+[![License: MIT](https://img.shields.io/github/license/PDX-Apps/preflight)](LICENSE)
+
 A framework-agnostic, AI/CI-native runner for PHP code-quality tools. One command runs
 your formatter, linters, static analysis, refactoring checks, and tests — in **check** or
 **fix** mode — and reports the results for humans, CI, or AI agents.

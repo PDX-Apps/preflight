@@ -60,6 +60,15 @@ jobs:
           path: build
           if-no-files-found: ignore
 
+      # Publish the Clover report to Codecov for the trend graph + badge.
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./build/coverage.xml
+          fail_ci_if_error: false
+
       # Publish findings to the Security tab as SARIF (written by the run above, even on failure).
       - name: Upload SARIF
         if: always()
