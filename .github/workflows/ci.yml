@@ -66,6 +66,7 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: PDX-Apps/preflight
           files: ./build/coverage.xml
           fail_ci_if_error: false
 
