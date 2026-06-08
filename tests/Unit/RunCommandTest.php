@@ -45,8 +45,21 @@ final class RunCommandTest extends TestCase
         return $project;
     }
 
+    /**
+     * The patch-coverage gate only engages when a coverage driver is active (it's detected at
+     * the composition root, inside RunCommand), so these end-to-end tests skip without one
+     * rather than failing — the patch logic itself is covered driver-free elsewhere.
+     */
+    private function skipWithoutCoverageDriver(): void
+    {
+        if (! \PdxApps\Preflight\Support\CoverageDriver::detect() instanceof \PdxApps\Preflight\Support\CoverageDriver) {
+            $this->markTestSkipped('patch coverage needs a coverage driver (PCOV/phpdbg/Xdebug)');
+        }
+    }
+
     public function test_since_computes_changed_line_ranges_for_patch_coverage(): void
     {
+        $this->skipWithoutCoverageDriver();
         $project = $this->projectWithPatchCoverage();
         $diff = "--- a/src/Foo.php\n+++ b/src/Foo.php\n@@ -1 +1 @@\n+x\n";
         $executor = (new FakeProcessExecutor())
@@ -78,6 +91,7 @@ final class RunCommandTest extends TestCase
 
     public function test_dirty_computes_changed_line_ranges_from_the_working_tree(): void
     {
+        $this->skipWithoutCoverageDriver();
         $project = $this->projectWithPatchCoverage();
         $diff = "--- a/src/Foo.php\n+++ b/src/Foo.php\n@@ -1 +1 @@\n+x\n";
         $executor = (new FakeProcessExecutor())
