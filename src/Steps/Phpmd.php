@@ -26,8 +26,11 @@ final class Phpmd extends AbstractStep
     /** Rule sets used only as a zero-config fallback (no explicit rule sets, no config file). */
     private const array DEFAULT_RULESETS = ['cleancode', 'codesize', 'controversial', 'design', 'naming', 'unusedcode'];
 
-    /** @var list<string> */
-    private array $scanPaths = ['src'];
+    /** Conventional source directories scanned by default, filtered to those that exist. */
+    private const array DEFAULT_SCAN_PATHS = ['app', 'src'];
+
+    /** @var list<string>|null Explicit scan paths; null means use {@see DEFAULT_SCAN_PATHS}. */
+    private ?array $scanPaths = null;
 
     /** @var list<string>|null */
     private ?array $rulesets = null;
@@ -110,15 +113,29 @@ final class Phpmd extends AbstractStep
     }
 
     /**
-     * A narrowed run supplies its (dir-widened) target paths; otherwise the configured scan paths.
+     * A narrowed run supplies its (dir-widened) target paths; otherwise the configured scan
+     * paths. The default set ({@see DEFAULT_SCAN_PATHS}) is filtered to directories that exist
+     * so a project that uses `app` (Laravel) and not `src` — or vice versa — doesn't make
+     * PHPMD error on a missing path. Explicitly configured paths are passed through as given.
      *
      * @return list<string>
      */
     private function resolvePaths(Context $context): array
     {
         $targeted = $context->pathsFor($this->targeting());
+        if ($targeted !== []) {
+            return $targeted;
+        }
 
-        return $targeted !== [] ? $targeted : $this->scanPaths;
+        if ($this->scanPaths !== null) {
+            return $this->scanPaths;
+        }
+
+        $existing = array_values(array_filter(self::DEFAULT_SCAN_PATHS, $context->pathExists(...)));
+
+        // If neither conventional directory exists, fall back to the first default so the
+        // command is still well-formed (PHPMD will report the missing path itself).
+        return $existing !== [] ? $existing : [self::DEFAULT_SCAN_PATHS[0]];
     }
 
     /**

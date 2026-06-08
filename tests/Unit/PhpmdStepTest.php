@@ -98,6 +98,40 @@ final class PhpmdStepTest extends TestCase
         $this->assertContains('src', $plan->command);
     }
 
+    public function test_by_default_it_scans_only_source_directories_that_exist(): void
+    {
+        // A Laravel-style project: app/ exists, src/ does not.
+        $project = new TempProject();
+        $project->dir('app');
+
+        $plan = Phpmd::make()->plan($this->context($project), Mode::Check);
+
+        $this->assertContains('app', $plan->command);
+        $this->assertNotContains('src', $plan->command, 'a missing src/ must not be passed (it would make PHPMD error)');
+    }
+
+    public function test_by_default_a_package_layout_scans_src(): void
+    {
+        $project = new TempProject();
+        $project->dir('src');
+
+        $plan = Phpmd::make()->plan($this->context($project), Mode::Check);
+
+        $this->assertContains('src', $plan->command);
+        $this->assertNotContains('app', $plan->command);
+    }
+
+    public function test_with_no_conventional_directory_it_stays_well_formed(): void
+    {
+        // Neither app/ nor src/ exists: the command still has a path so PHPMD can report it,
+        // rather than the step producing a malformed invocation.
+        $project = new TempProject();
+
+        $plan = Phpmd::make()->plan($this->context($project), Mode::Check);
+
+        $this->assertContains('app', $plan->command);
+    }
+
     public function test_a_narrowed_run_passes_the_target_paths(): void
     {
         $project = new TempProject();

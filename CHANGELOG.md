@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **PHPMD no longer errors on Laravel-style projects.** Its default scan paths are now
+  `app`/`src` filtered to those that exist (was a hard-coded `src`), so a project that uses
+  `app` doesn't make PHPMD fail with `"src" does not exist`.
+- **PHPStan no longer crashes at 128M out of the box.** The step now passes `--memory-limit=-1`
+  by default (override with `Phpstan::make()->memoryLimit('1G')`), so a real app's analysis
+  isn't killed by the subprocess's php.ini memory limit.
+
 ## [0.1.1] - 2026-06-07
 
 ### Fixed

@@ -49,6 +49,18 @@ final class ContextTest extends TestCase
         $this->assertNull($context->configPath(null));
     }
 
+    public function test_path_exists_checks_files_and_directories_under_the_root(): void
+    {
+        $project = new TempProject();
+        $project->dir('app');
+        $project->file('composer.json', '{}');
+        $context = $this->context($project->root);
+
+        $this->assertTrue($context->pathExists('app'));
+        $this->assertTrue($context->pathExists('composer.json'));
+        $this->assertFalse($context->pathExists('src'));
+    }
+
     public function test_changed_lines_default_to_none(): void
     {
         $this->assertSame([], $this->context((new TempProject())->root)->changedLines());

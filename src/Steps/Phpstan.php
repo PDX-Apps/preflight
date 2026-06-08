@@ -29,6 +29,13 @@ final class Phpstan extends AbstractStep
     /** The level used only as a zero-config fallback (no explicit level, no config file). */
     private const int DEFAULT_LEVEL = 5;
 
+    /**
+     * Default `--memory-limit` when none is set. PHPStan otherwise inherits the subprocess's
+     * php.ini limit (often 128M), which a real app's analysis blows past — so it crashes out of
+     * the box. `-1` lifts the ceiling; set an explicit bound with {@see memoryLimit()}.
+     */
+    private const string DEFAULT_MEMORY_LIMIT = '-1';
+
     private ?int $level = null;
 
     private ?string $memoryLimit = null;
@@ -103,9 +110,7 @@ final class Phpstan extends AbstractStep
             $command[] = '--level=' . self::DEFAULT_LEVEL;
         }
 
-        if ($this->memoryLimit !== null) {
-            $command[] = '--memory-limit=' . $this->memoryLimit;
-        }
+        $command[] = '--memory-limit=' . ($this->memoryLimit ?? self::DEFAULT_MEMORY_LIMIT);
 
         $command = [
             ...$command,

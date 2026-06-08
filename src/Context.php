@@ -16,6 +16,10 @@ use PdxApps\Preflight\Support\Tool;
  * Steps read everything they need from the Context and never touch globals or the
  * filesystem directly for these concerns, which keeps them pure and makes scope flags
  * (--files, --dirty, --module) and the in-process API behave identically.
+ *
+ * @SuppressWarnings("PHPMD.TooManyPublicMethods") A read-only accessor hub for a run's
+ *   environment — root, scope, config, tools, coverage — whose getters legitimately exceed
+ *   the default cap.
  */
 final readonly class Context
 {
@@ -75,6 +79,16 @@ final readonly class Context
     public function toolPath(Tool $tool): string
     {
         return $tool->resolvePath($this->projectRoot);
+    }
+
+    /**
+     * Whether a project-relative path (file or directory) exists on disk. Used by steps that
+     * default to conventional source directories, so they can skip ones a given project lacks
+     * (e.g. `src` in a Laravel app that uses `app`).
+     */
+    public function pathExists(string $relative): bool
+    {
+        return file_exists(rtrim($this->projectRoot, '/') . '/' . ltrim($relative, '/'));
     }
 
     /**

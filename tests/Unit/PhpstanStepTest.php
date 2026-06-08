@@ -123,6 +123,16 @@ final class PhpstanStepTest extends TestCase
         $this->assertContains('--memory-limit=1G', $plan->command);
     }
 
+    public function test_it_lifts_the_memory_limit_by_default(): void
+    {
+        $project = new TempProject();
+
+        // Out of the box PHPStan must not inherit a low php.ini limit (it crashes real apps).
+        $plan = Phpstan::make()->plan($this->context($project), Mode::Check);
+
+        $this->assertContains('--memory-limit=-1', $plan->command);
+    }
+
     public function test_a_narrowed_run_passes_target_files_as_path_arguments(): void
     {
         $project = new TempProject();
