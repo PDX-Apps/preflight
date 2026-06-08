@@ -19,7 +19,7 @@ final class MarkdownRendererTest extends TestCase
     private function render(RunResult $result): string
     {
         $output = new BufferedOutput();
-        new MarkdownRenderer()->render($result, $output);
+        (new MarkdownRenderer())->render($result, $output);
 
         return $output->fetch();
     }

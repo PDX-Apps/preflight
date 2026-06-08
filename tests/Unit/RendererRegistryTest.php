@@ -49,11 +49,11 @@ final class RendererRegistryTest extends TestCase
 
     public function test_sarif_has_a_dedicated_renderer(): void
     {
-        $this->assertInstanceOf(SarifRenderer::class, new RendererRegistry()->for(OutputFormat::Sarif));
+        $this->assertInstanceOf(SarifRenderer::class, (new RendererRegistry())->for(OutputFormat::Sarif));
     }
 
     public function test_markdown_has_a_dedicated_renderer(): void
     {
-        $this->assertInstanceOf(MarkdownRenderer::class, new RendererRegistry()->for(OutputFormat::Markdown));
+        $this->assertInstanceOf(MarkdownRenderer::class, (new RendererRegistry())->for(OutputFormat::Markdown));
     }
 }

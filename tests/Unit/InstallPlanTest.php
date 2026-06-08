@@ -22,7 +22,7 @@ final class InstallPlanTest extends TestCase
 
     public function test_an_empty_plan_reports_empty(): void
     {
-        $this->assertTrue(new InstallPlan()->isEmpty());
+        $this->assertTrue((new InstallPlan())->isEmpty());
         $this->assertFalse(new InstallPlan([$this->planned('phpstan', 'phpstan/phpstan', '^2')])->isEmpty());
     }
 

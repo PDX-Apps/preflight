@@ -33,7 +33,7 @@ final class InstallerTest extends TestCase
             new InstallCaveat('dev branch', 'https://x', setsMinimumStabilityDev: true),
         );
 
-        $outcome = new Installer($project->root, $executor)->apply($this->plan($recipe, 'phpmd'), [], writeConfigs: false, force: false);
+        $outcome = (new Installer($project->root, $executor))->apply($this->plan($recipe, 'phpmd'), [], writeConfigs: false, force: false);
 
         $this->assertTrue($outcome->success);
         $commands = $executor->commands();
@@ -47,7 +47,7 @@ final class InstallerTest extends TestCase
         $project = new TempProject();
         $executor = new FakeProcessExecutor();
 
-        $outcome = new Installer($project->root, $executor)->apply(
+        $outcome = (new Installer($project->root, $executor))->apply(
             $this->plan(new InstallRecipe('phpstan/phpstan', '^2')),
             [],
             writeConfigs: false,
@@ -63,7 +63,7 @@ final class InstallerTest extends TestCase
         $project = new TempProject();
         $executor = (new FakeProcessExecutor())->queueFailure(1, 'version conflict');
 
-        $outcome = new Installer($project->root, $executor)->apply(
+        $outcome = (new Installer($project->root, $executor))->apply(
             $this->plan(new InstallRecipe('phpstan/phpstan', '^2', configFile: 'phpstan.neon')),
             [],
             writeConfigs: true,
@@ -81,7 +81,7 @@ final class InstallerTest extends TestCase
         $project = new TempProject();
         $executor = new FakeProcessExecutor();
 
-        $outcome = new Installer($project->root, $executor)->apply(
+        $outcome = (new Installer($project->root, $executor))->apply(
             $this->plan(new InstallRecipe('phpstan/phpstan', '^2', configFile: 'phpstan.neon')),
             [],
             writeConfigs: true,
@@ -111,7 +111,7 @@ final class InstallerTest extends TestCase
         $project = new TempProject();
         $executor = new FakeProcessExecutor();
 
-        new Installer($project->root, $executor)->apply(
+        (new Installer($project->root, $executor))->apply(
             $this->plan(new InstallRecipe('phpstan/phpstan', '^2', configFile: 'phpstan.neon')),
             [],
             writeConfigs: false,
@@ -128,7 +128,7 @@ final class InstallerTest extends TestCase
         $executor = new FakeProcessExecutor();
         $recipe = new InstallRecipe('vimeo/psalm', '^6', initArgs: ['--init']);
 
-        new Installer($project->root, $executor)->apply(
+        (new Installer($project->root, $executor))->apply(
             $this->plan($recipe, 'psalm'),
             ['psalm' => Psalm::make()],
             writeConfigs: true,

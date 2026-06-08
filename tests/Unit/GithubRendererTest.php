@@ -19,7 +19,7 @@ final class GithubRendererTest extends TestCase
     private function render(RunResult $result): string
     {
         $output = new BufferedOutput();
-        new GithubRenderer()->render($result, $output);
+        (new GithubRenderer())->render($result, $output);
 
         return $output->fetch();
     }

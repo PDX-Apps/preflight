@@ -22,6 +22,6 @@ final class ApplicationTest extends TestCase
 
     public function test_an_unregistered_name_is_not_a_known_command(): void
     {
-        $this->assertFalse(new Application()->isKnownCommand('app/Some/Path.php'));
+        $this->assertFalse((new Application())->isKnownCommand('app/Some/Path.php'));
     }
 }

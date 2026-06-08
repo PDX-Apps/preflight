@@ -61,8 +61,8 @@ final class InstallValueObjectsTest extends TestCase
 
     public function test_caveat_defaults_to_not_setting_minimum_stability(): void
     {
-        $this->assertFalse(new InstallCaveat('note', 'https://x')->setsMinimumStabilityDev);
-        $this->assertTrue(new InstallCaveat('note', 'https://x', true)->setsMinimumStabilityDev);
+        $this->assertFalse((new InstallCaveat('note', 'https://x'))->setsMinimumStabilityDev);
+        $this->assertTrue((new InstallCaveat('note', 'https://x', true))->setsMinimumStabilityDev);
     }
 
     public function test_outcome_and_planned_and_skipped_expose_their_data(): void

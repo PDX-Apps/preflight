@@ -22,7 +22,7 @@ final class SarifRendererTest extends TestCase
     private function render(RunResult $result): array
     {
         $output = new BufferedOutput();
-        new SarifRenderer()->render($result, $output);
+        (new SarifRenderer())->render($result, $output);
 
         return (array) json_decode($output->fetch(), true, flags: JSON_THROW_ON_ERROR);
     }

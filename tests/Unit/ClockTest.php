@@ -16,7 +16,7 @@ final class ClockTest extends TestCase
     public function test_the_system_clock_returns_an_immutable_now(): void
     {
         $before = new \DateTimeImmutable();
-        $now = new SystemClock()->now();
+        $now = (new SystemClock())->now();
         $after = new \DateTimeImmutable();
 
         $this->assertGreaterThanOrEqual($before->getTimestamp(), $now->getTimestamp());
