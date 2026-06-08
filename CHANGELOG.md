@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-07
+
 ### Fixed
 
 - **PHPMD no longer errors on Laravel-style projects.** Its default scan paths are now
@@ -75,6 +77,7 @@ Initial release — a framework-agnostic, AI/CI-native code-quality runner for P
 - **`init` / `steps` commands** — scaffold a `preflight.php` and list the configured
   steps with their availability.
 
-[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/PDX-Apps/preflight/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/PDX-Apps/preflight/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/PDX-Apps/preflight/releases/tag/v0.1.0
