@@ -110,6 +110,11 @@ jobs:
       matrix:
         php: ['8.3', '8.4']
         symfony: ['^7.4', '^8.0']
+        exclude:
+          # Symfony 8 requires PHP 8.4, so a PHP 8.3 app resolves to Symfony 7 — that's the
+          # supported combination, not an impossible one to force here.
+          - php: '8.3'
+            symfony: '^8.0'
     steps:
       - uses: actions/checkout@v6
 
