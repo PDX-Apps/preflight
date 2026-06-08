@@ -44,7 +44,7 @@ final readonly class Diagnostics
 
         return new self(
             projectRoot: $projectRoot,
-            hasConfigFile: new ConfigLoader()->exists($projectRoot),
+            hasConfigFile: (new ConfigLoader())->exists($projectRoot),
             steps: array_map(static fn (Step $step): StepDiagnostic => self::diagnose($step, $context), $steps),
             coverageDriver: $driver,
         );

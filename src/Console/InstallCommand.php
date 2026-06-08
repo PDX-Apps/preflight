@@ -65,12 +65,12 @@ final class InstallCommand extends Command
         $executor = $this->executor ?? new SymfonyProcessExecutor();
         $context = new Context($root, TargetSet::wholeProject());
 
-        $configuration = new ConfigLoader()->load($root);
+        $configuration = (new ConfigLoader())->load($root);
         $steps = $configuration->resolveSteps(array_map(static fn (string $c): Step => $c::make(), StepRegistry::defaults()));
         $stepsByName = $this->index($steps);
 
         $options = $this->gatherOptions($input, $output, $context, $stepsByName);
-        $plan = new InstallPlanner($context)->plan($steps, $options);
+        $plan = (new InstallPlanner($context))->plan($steps, $options);
 
         $this->preview($plan, $output);
 
@@ -92,7 +92,7 @@ final class InstallCommand extends Command
             return Command::SUCCESS;
         }
 
-        $outcome = new Installer($root, $executor)->apply(
+        $outcome = (new Installer($root, $executor))->apply(
             $plan,
             $stepsByName,
             writeConfigs: ! $input->getOption('no-configs'),

@@ -35,7 +35,7 @@ final class ListStepsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $root = $this->projectRoot ?? ProjectRoot::discoverFrom(getcwd() ?: '.');
-        $diagnostics = Diagnostics::gather(new ConfigLoader()->load($root), $root);
+        $diagnostics = Diagnostics::gather((new ConfigLoader())->load($root), $root);
 
         if ($input->getOption('format') === 'json') {
             $steps = array_map(static fn ($s): array => $s->toArray(), $diagnostics->steps);

@@ -37,7 +37,7 @@ final class DoctorCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $root = $this->projectRoot ?? ProjectRoot::discoverFrom(getcwd() ?: '.');
-        $diagnostics = Diagnostics::gather(new ConfigLoader()->load($root), $root);
+        $diagnostics = Diagnostics::gather((new ConfigLoader())->load($root), $root);
 
         if ($input->getOption('format') === 'json') {
             $output->writeln((string) json_encode($diagnostics->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));

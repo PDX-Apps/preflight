@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Allow Symfony 8.** `symfony/console` and `symfony/process` now accept `^7.4 || ^8.0`
+  (were `^7.4`), so Preflight installs alongside apps on Symfony 8 — e.g. Laravel 13 — without
+  a dependency conflict, while still supporting Symfony 7.4 (Laravel 11/12).
+- **Lower the PHP floor to 8.3** (was 8.4), so it installs on Laravel 12 apps running PHP 8.3.
+  The few PHP 8.4-only expressions (`new Foo()->bar()`) were rewritten as `(new Foo())->bar()`.
+  A CI matrix now tests PHP 8.3/8.4 × Symfony 7.4/8.0.
+
 ### Added
 
 - **Coverage % in the results.** A passing run now reports the measured coverage as an

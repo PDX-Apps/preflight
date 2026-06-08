@@ -85,19 +85,19 @@ final class RunCommand extends Command
         $root = $this->projectRoot ?? ProjectRoot::discoverFrom(getcwd() ?: '.');
         $executor = $this->executor ?? new SymfonyProcessExecutor();
 
-        $configuration = new ConfigLoader()->load($root);
+        $configuration = (new ConfigLoader())->load($root);
         if ($input->getOption('fail-fast')) {
             $configuration = $configuration->withFailFast(true);
         }
 
         $request = $this->scopeRequest($input, $configuration);
         $git = new GitFiles($executor);
-        $targets = new ScopeResolver($git)->resolve($request, $root, $configuration->modules);
+        $targets = (new ScopeResolver($git))->resolve($request, $root, $configuration->modules);
         // Lazy: the git diff only runs if a step actually reads patch coverage.
         $changedLines = fn (): array => $this->changedLines($request, $git, $root);
 
         $cache = new FreshnessCache($root, $this->clock ?? new SystemClock());
-        $hash = new InputHasher($root)->hash($targets->files(), $this->configFiles($root));
+        $hash = (new InputHasher($root))->hash($targets->files(), $this->configFiles($root));
 
         if ($input->getOption('skip-if-fresh') && $cache->isFresh($hash)) {
             $output->writeln('Preflight: inputs unchanged since the last passing run — skipped (fresh).');
@@ -109,7 +109,7 @@ final class RunCommand extends Command
         $result = Preflight::make($configuration, projectRoot: $root, executor: $executor)->run($mode, $targets, $changedLines);
 
         $format = $this->resolveFormat($input, $configuration->defaultFormat);
-        new RendererRegistry()->for($format, isTty: $output->isDecorated())->render($result, $output);
+        (new RendererRegistry())->for($format, isTty: $output->isDecorated())->render($result, $output);
 
         $this->writeOutputs($input, $result);
         $cache->store($hash, $result->isSuccess());
