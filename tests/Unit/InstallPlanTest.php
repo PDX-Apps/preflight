@@ -23,7 +23,7 @@ final class InstallPlanTest extends TestCase
     public function test_an_empty_plan_reports_empty(): void
     {
         $this->assertTrue((new InstallPlan())->isEmpty());
-        $this->assertFalse(new InstallPlan([$this->planned('phpstan', 'phpstan/phpstan', '^2')])->isEmpty());
+        $this->assertFalse((new InstallPlan([$this->planned('phpstan', 'phpstan/phpstan', '^2')]))->isEmpty());
     }
 
     public function test_requirements_join_package_and_constraint(): void
@@ -41,9 +41,9 @@ final class InstallPlanTest extends TestCase
         $devCaveat = new InstallCaveat('dev branch', 'https://x', setsMinimumStabilityDev: true);
         $plainCaveat = new InstallCaveat('note', 'https://x');
 
-        $this->assertTrue(new InstallPlan([$this->planned('phpmd', 'phpmd/phpmd', '3.x-dev', $devCaveat)])->setsMinimumStabilityDev());
-        $this->assertFalse(new InstallPlan([$this->planned('a', 'a/a', '^1', $plainCaveat)])->setsMinimumStabilityDev());
-        $this->assertFalse(new InstallPlan([$this->planned('a', 'a/a', '^1')])->setsMinimumStabilityDev());
+        $this->assertTrue((new InstallPlan([$this->planned('phpmd', 'phpmd/phpmd', '3.x-dev', $devCaveat)]))->setsMinimumStabilityDev());
+        $this->assertFalse((new InstallPlan([$this->planned('a', 'a/a', '^1', $plainCaveat)]))->setsMinimumStabilityDev());
+        $this->assertFalse((new InstallPlan([$this->planned('a', 'a/a', '^1')]))->setsMinimumStabilityDev());
     }
 
     public function test_skipped_installs_are_carried_through(): void

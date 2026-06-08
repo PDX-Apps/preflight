@@ -16,7 +16,7 @@ final class ComposerNormalizeParserTest extends TestCase
 {
     public function test_check_mode_is_clean_on_a_zero_exit(): void
     {
-        $result = new ComposerNormalizeParser(Mode::Check)
+        $result = (new ComposerNormalizeParser(Mode::Check))
             ->parse(new ProcessResult(0, './composer.json is already normalized.', ''));
 
         $this->assertSame([], $result->findings);
@@ -25,7 +25,7 @@ final class ComposerNormalizeParserTest extends TestCase
 
     public function test_check_mode_reports_a_fixable_finding_on_a_nonzero_exit(): void
     {
-        $result = new ComposerNormalizeParser(Mode::Check)
+        $result = (new ComposerNormalizeParser(Mode::Check))
             ->parse(new ProcessResult(1, './composer.json is not normalized.', ''));
 
         $this->assertCount(1, $result->findings);
@@ -38,7 +38,7 @@ final class ComposerNormalizeParserTest extends TestCase
 
     public function test_fix_mode_reports_a_changed_file_when_it_normalized(): void
     {
-        $result = new ComposerNormalizeParser(Mode::Fix)
+        $result = (new ComposerNormalizeParser(Mode::Fix))
             ->parse(new ProcessResult(0, 'Successfully normalized ./composer.json.', ''));
 
         $this->assertSame([], $result->findings);
@@ -47,7 +47,7 @@ final class ComposerNormalizeParserTest extends TestCase
 
     public function test_fix_mode_reports_nothing_when_already_normalized(): void
     {
-        $result = new ComposerNormalizeParser(Mode::Fix)
+        $result = (new ComposerNormalizeParser(Mode::Fix))
             ->parse(new ProcessResult(0, './composer.json is already normalized.', ''));
 
         $this->assertSame([], $result->findings);
@@ -56,7 +56,7 @@ final class ComposerNormalizeParserTest extends TestCase
 
     public function test_the_tool_label_is_configurable(): void
     {
-        $finding = new ComposerNormalizeParser(Mode::Check, 'normalize')
+        $finding = (new ComposerNormalizeParser(Mode::Check, 'normalize'))
             ->parse(new ProcessResult(1, 'not normalized', ''))->findings[0];
 
         $this->assertSame('normalize', $finding->tool);

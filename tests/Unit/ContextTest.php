@@ -36,7 +36,7 @@ final class ContextTest extends TestCase
         $this->assertNull($this->context($project->root)->coverageDriver());
         $this->assertSame(
             CoverageDriver::Pcov,
-            new Context($project->root, TargetSet::wholeProject(), CoverageDriver::Pcov)->coverageDriver(),
+            (new Context($project->root, TargetSet::wholeProject(), CoverageDriver::Pcov))->coverageDriver(),
         );
     }
 

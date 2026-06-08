@@ -99,10 +99,10 @@ final class InstallerTest extends TestCase
         $project->file('phpstan.neon', 'original');
         $recipe = new InstallRecipe('phpstan/phpstan', '^2', configFile: 'phpstan.neon');
 
-        new Installer($project->root, new FakeProcessExecutor())->apply($this->plan($recipe), [], writeConfigs: true, force: false);
+        (new Installer($project->root, new FakeProcessExecutor()))->apply($this->plan($recipe), [], writeConfigs: true, force: false);
         $this->assertSame('original', file_get_contents($project->root . '/phpstan.neon'), 'kept without --force');
 
-        new Installer($project->root, new FakeProcessExecutor())->apply($this->plan($recipe), [], writeConfigs: true, force: true);
+        (new Installer($project->root, new FakeProcessExecutor()))->apply($this->plan($recipe), [], writeConfigs: true, force: true);
         $this->assertNotSame('original', file_get_contents($project->root . '/phpstan.neon'), 'overwritten with --force');
     }
 
