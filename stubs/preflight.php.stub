@@ -4,58 +4,58 @@ declare(strict_types=1);
 
 use PdxApps\Preflight\Preflight;
 
-// The built-in steps, in default run order. Uncomment this import to reference
-// any of them in ->withSteps()/->tune()/->without() below.
+// Uncomment to reference any built-in step below:
 // use PdxApps\Preflight\Steps\{Pint, Phpcs, Phpstan, Rector, Psalm, Phpmd, ComposerAudit, Tests};
+// Opt-in steps (not auto-detected — add them explicitly with ->addSteps()):
+// use PdxApps\Preflight\Steps\{ComposerNormalize, Deptrac};
 
-/*
-|--------------------------------------------------------------------------
-| Preflight configuration
-|--------------------------------------------------------------------------
-|
-| Return a configured builder. With no steps listed, Preflight auto-detects
-| every built-in tool installed in this project and runs them in order.
-|
-| Default steps (run order; each runs only if its tool is installed):
-|   1. Pint           formatting           (fixable)
-|   2. Phpcs          coding standard      (fixable)
-|   3. Phpstan        static analysis
-|   4. Rector         refactoring          (fixable)
-|   5. Psalm          static analysis
-|   6. Phpmd          mess detection
-|   7. ComposerAudit  dependency security  (always runs — built into Composer)
-|   8. Tests          PHPUnit / Pest
-|
-| Examples:
-|   ->withSteps([                                 // explicit set + order; bare
-|       Pint::class,                              // Foo::class uses defaults,
-|       Phpcs::class,                             // Foo::make()->... configures
-|       Phpstan::make()->level(9)->memoryLimit('1G'),
-|       Rector::class,
-|       Psalm::class,
-|       Phpmd::class,
-|       ComposerAudit::make()->abandoned('ignore'),
-|       Tests::make()->before(['php', 'artisan', 'config:clear']),
-|   ])
-|   ->addSteps([Deptrac::class])                  // keep defaults, append opt-in steps
-|   ->tune(Psalm::make()->config('psalm.xml'))    // tweak one, keep the rest
-|   ->without(Phpmd::class)                        // drop one
-|   ->withPaths(['app', 'src'])                    // what to scan
-|   ->failFast()                                   // stop at first failure
-|
-| Run defaults (each has a CLI override; all off unless set):
-|   ->fixByDefault()        // a bare run fixes what it can      (override: --check)
-|   ->dirtyByDefault()      // ...scoped to working-tree changes (override: --all)
-|   ->defaultFormat('agent')// ...emitting the agent format      (override: --format)
-|   ->forAgents()           // all three at once, for coding agents
-|
-| Tool configs (pint.json, phpstan.neon, …) are read from the project root by
-| default; override per step with ->config('path/to/config').
-|
-| Precedence for any one setting: an explicit setter (or ->args([...])) wins,
-| else the tool's config file, else the built-in default. e.g. ->level(9)
-| overrides a phpstan.neon that says level: 5.
-|
-*/
+// With no steps listed, Preflight auto-detects every installed built-in tool and runs them in
+// order — Pint, Phpcs, Phpstan, Rector, Psalm, Phpmd, ComposerAudit, Tests — each only if its
+// tool is installed. Customize by replacing the line below with one of the examples beneath it.
 
 return Preflight::configure();
+
+// ============================================================================
+// Examples — each is a complete, paste-ready statement. Replace the return above
+// with one (or chain the methods together). Delete the leading "// " to enable.
+// ============================================================================
+
+// Explicit step set and order (bare ::class uses defaults; ::make()->… configures):
+// return Preflight::configure()
+//     ->withSteps([
+//         Pint::class,
+//         Phpstan::make()->level(9),
+//         Tests::make()->before(['php', 'artisan', 'config:clear']),
+//     ]);
+
+// Keep the auto-detected defaults and append the opt-in steps (need their tools/config):
+// return Preflight::configure()
+//     ->addSteps([ComposerNormalize::class, Deptrac::class]);
+
+// Coverage — emit reports and gate on them (needs a driver: PCOV or Xdebug):
+// return Preflight::configure()
+//     ->tune(
+//         Tests::make()
+//             ->coverage(['clover' => 'build/coverage.xml', 'html' => 'build/coverage'])
+//             ->minCoverage(80)        // whole-project line-coverage floor
+//             ->minPatchCoverage(90),  // changed lines (on --since/--dirty) must be covered
+//     );
+
+// Ignore findings from framework-scaffolded paths, across every tool:
+// return Preflight::configure()
+//     ->exclude(['app/Providers', 'app/Actions/Fortify', 'database']);
+
+// Other adjustments (chain onto configure()):
+// ->tune(Psalm::make()->config('psalm.xml'))  // reconfigure one step, keep the rest
+// ->without(Phpmd::class)                      // drop a step
+// ->withPaths(['app', 'src'])                  // directories to scan on a whole-project run
+// ->failFast()                                 // stop at the first failing step
+
+// Run defaults — each has a CLI override:
+// ->fixByDefault()          // a bare run fixes what it can      (override: --check)
+// ->dirtyByDefault()        // ...scoped to working-tree changes (override: --all)
+// ->defaultFormat('agent')  // ...emitting the agent format      (override: --format)
+// ->forAgents()             // all three at once, for coding agents
+
+// Precedence for any one setting: an explicit setter (or ->args([...])) wins, else the tool's
+// own config file (pint.json, phpstan.neon, …), else the built-in default.

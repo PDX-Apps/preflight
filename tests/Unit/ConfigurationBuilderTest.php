@@ -30,6 +30,16 @@ final class ConfigurationBuilderTest extends TestCase
         $this->assertSame(['app', 'src'], $config->paths);
     }
 
+    public function test_exclude_accumulates_paths_across_calls(): void
+    {
+        $config = (new ConfigurationBuilder())
+            ->exclude(['app/Providers'])
+            ->exclude(['app/Actions/Fortify', 'database'])
+            ->build();
+
+        $this->assertSame(['app/Providers', 'app/Actions/Fortify', 'database'], $config->exclude);
+    }
+
     public function test_with_steps_accepts_class_strings_and_normalizes_them_to_instances(): void
     {
         $config = (new ConfigurationBuilder())

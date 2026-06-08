@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-07
+
+### Added
+
+- **`->exclude([...])`** drops findings whose file matches a path, across every tool at once —
+  for framework-scaffolded code the analysers misjudge (service providers, Fortify actions, …).
+  Patterns match a finding's file by equality, parent directory, or glob. Works uniformly
+  because Preflight normalizes every tool's output, including ones with no CLI exclude (PHPStan,
+  Psalm, Rector, Pint). A step whose findings were all excluded passes; a crash with no findings
+  is left failing.
+
+### Changed
+
+- **Richer, copy-friendly `preflight.php` scaffold.** The `init`/`install` stub now shows
+  paste-ready example statements (real `//` comment lines instead of a `|`-banner you can't copy
+  cleanly) and demonstrates coverage, the opt-in steps, and `exclude()`.
+
 ## [0.1.2] - 2026-06-07
 
 ### Fixed
@@ -77,7 +94,8 @@ Initial release — a framework-agnostic, AI/CI-native code-quality runner for P
 - **`init` / `steps` commands** — scaffold a `preflight.php` and list the configured
   steps with their availability.
 
-[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/PDX-Apps/preflight/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/PDX-Apps/preflight/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/PDX-Apps/preflight/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/PDX-Apps/preflight/releases/tag/v0.1.0

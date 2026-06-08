@@ -58,6 +58,7 @@ final class ConfigurationTest extends TestCase
             paths: ['src'],
             fixByDefault: true,
             dirtyByDefault: true,
+            exclude: ['app/Providers'],
         );
 
         $flipped = $base->withFailFast(true);
@@ -71,6 +72,7 @@ final class ConfigurationTest extends TestCase
         $this->assertSame(['src'], $flipped->paths);
         $this->assertTrue($flipped->fixByDefault);
         $this->assertTrue($flipped->dirtyByDefault);
+        $this->assertSame(['app/Providers'], $flipped->exclude);
     }
 
     public function test_resolve_steps_uses_the_explicit_list_when_present(): void

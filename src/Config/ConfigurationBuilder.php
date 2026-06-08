@@ -53,6 +53,9 @@ final class ConfigurationBuilder
 
     private bool $dirtyByDefault = false;
 
+    /** @var list<string> */
+    private array $exclude = [];
+
     public function __construct()
     {
         $this->modules = ModuleConfig::default();
@@ -156,6 +159,27 @@ final class ConfigurationBuilder
         return $this;
     }
 
+    /**
+     * Drop findings whose file matches any of these paths, across every tool — useful for
+     * framework-scaffolded code the analysers misjudge (e.g. service providers, Fortify
+     * actions). A pattern matches a finding's project-relative file when it equals it, is a
+     * parent directory of it, or matches it as a glob (`fnmatch`), e.g.
+     * `'app/Providers'`, `'app/Actions/Fortify'`, `'database/*'`.
+     *
+     * Because Preflight normalizes every tool's output to a common finding, this works for all
+     * of them — including ones with no CLI exclude (PHPStan, Psalm, Rector). A step whose only
+     * findings were excluded passes; the tools still scan the files, their findings are just
+     * not reported. Calls accumulate.
+     *
+     * @param  list<string>  $paths
+     */
+    public function exclude(array $paths): self
+    {
+        $this->exclude = [...$this->exclude, ...$paths];
+
+        return $this;
+    }
+
     public function defaultFormat(OutputFormat|string $format): self
     {
         $this->defaultFormat = $format instanceof OutputFormat ? $format : OutputFormat::from($format);
@@ -213,6 +237,7 @@ final class ConfigurationBuilder
             paths: $this->paths,
             fixByDefault: $this->fixByDefault,
             dirtyByDefault: $this->dirtyByDefault,
+            exclude: $this->exclude,
         );
     }
 

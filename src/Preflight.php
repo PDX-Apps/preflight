@@ -7,6 +7,7 @@ namespace PdxApps\Preflight;
 use PdxApps\Preflight\Config\Configuration;
 use PdxApps\Preflight\Config\ConfigurationBuilder;
 use PdxApps\Preflight\Contracts\ProcessExecutor;
+use PdxApps\Preflight\Result\FindingExcluder;
 use PdxApps\Preflight\Result\RunResult;
 use PdxApps\Preflight\Runner\SequentialRunner;
 use PdxApps\Preflight\Runner\SymfonyProcessExecutor;
@@ -76,6 +77,9 @@ final readonly class Preflight
         $autoSteps = $this->configuration->hasExplicitSteps() ? [] : $this->registry->installed($context);
         $steps = $this->configuration->resolveSteps($autoSteps);
 
-        return $runner->run($steps, $context, $mode);
+        $result = $runner->run($steps, $context, $mode);
+
+        // Drop findings from excluded paths (e.g. framework scaffolding) before the verdict.
+        return (new FindingExcluder($this->configuration->exclude))->apply($result);
     }
 }

@@ -80,6 +80,28 @@ final readonly class StepResult
         return new self($name, $label, StepStatus::MissingTool, [], 0.0, null, '', $reason);
     }
 
+    /**
+     * A copy with its findings replaced and status reassessed — used when findings are filtered
+     * out (e.g. by an `exclude()` path), which can turn a finding-driven failure into a pass.
+     *
+     * @param  list<Finding>  $findings
+     */
+    public function withFindings(array $findings, StepStatus $status): self
+    {
+        return new self(
+            $this->name,
+            $this->label,
+            $status,
+            $findings,
+            $this->durationSeconds,
+            $this->exitCode,
+            $this->output,
+            $this->skipReason,
+            $this->changed,
+            $this->metrics,
+        );
+    }
+
     public function isFailure(): bool
     {
         return $this->status->isFailure();

@@ -27,6 +27,7 @@ final readonly class Configuration
      * @param  array<class-string<Step>, Step>  $tunes
      * @param  list<class-string<Step>>  $without
      * @param  list<string>|null  $paths
+     * @param  list<string>  $exclude path globs/prefixes whose findings are dropped from the result
      */
     public function __construct(
         public ?array $steps = null,
@@ -40,6 +41,7 @@ final readonly class Configuration
         public ?array $paths = null,
         public bool $fixByDefault = false,
         public bool $dirtyByDefault = false,
+        public array $exclude = [],
     ) {
     }
 
@@ -60,6 +62,7 @@ final readonly class Configuration
             paths: $this->paths,
             fixByDefault: $this->fixByDefault,
             dirtyByDefault: $this->dirtyByDefault,
+            exclude: $this->exclude,
         );
     }
 

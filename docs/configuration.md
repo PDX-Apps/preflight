@@ -32,6 +32,7 @@ return Preflight::configure()
 | `->tune(Step)` | Keep the auto-detected default set but reconfigure one step. |
 | `->without(Foo::class)` | Drop one step from the default set. |
 | `->withPaths([...])` | Directories to scan (default: auto). |
+| `->exclude([...])` | Drop findings from these paths, across every tool (see below). |
 | `->withModules(dir, app, tests)` | Enable `--module` scoping (see below). |
 | `->failFast()` | Stop at the first failing step. |
 
@@ -45,6 +46,29 @@ return Preflight::configure()
     ->without(Phpmd::class)                        // drop one
     ->failFast();
 ```
+
+## Ignoring paths (`exclude`)
+
+Framework-scaffolded code often trips the analysers — Psalm calls Laravel's service providers
+and Fortify actions "unused" because it can't see the container wiring. `exclude()` drops
+findings whose file matches a path, **across every tool at once**:
+
+```php
+return Preflight::configure()
+    ->exclude([
+        'app/Providers',          // a directory (and everything under it)
+        'app/Actions/Fortify',
+        'database',
+        'app/Legacy/*.php',       // a glob (fnmatch)
+    ]);
+```
+
+A pattern matches a finding's project-relative file when it **equals** it, is a **parent
+directory** of it, or matches it as a **glob**. Because Preflight normalizes every tool's
+output to a common finding, this works uniformly — including tools with no CLI exclude of their
+own (PHPStan, Psalm, Rector, Pint). A step whose findings were *all* excluded passes; a step
+that failed with no findings (a real crash) is left failing, so nothing is masked. The tools
+still scan the files — only the reporting is filtered — so it's correctness, not a speed-up.
 
 ## What takes precedence
 
