@@ -22,6 +22,9 @@ use PdxApps\Preflight\Steps\AbstractStep;
  * Use {@see withSteps()} to take full control of the set and order; use {@see addSteps()},
  * {@see tune()} / {@see without()} to adjust the default (auto-detected) set without
  * re-listing it.
+ *
+ * @SuppressWarnings("PHPMD.TooManyPublicMethods") A fluent builder is one public method per
+ * configurable option by design.
  */
 final class ConfigurationBuilder
 {
