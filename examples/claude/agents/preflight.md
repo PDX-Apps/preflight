@@ -23,6 +23,14 @@ Rules:
 - The exit code is the source of truth: `0` = clean, non-zero = findings remain.
 - Never report success while any finding remains.
 - Summarise the findings you fixed, grouped by file.
+- Scope/format flags when you need them: `--since=main` (changed since a ref — CI/patch-coverage),
+  `--all` (whole project), `--files=a.php,b.php`, `--only=phpstan,test` / `--skip=phpmd` (pick steps
+  by name), `--format=json`, `--fail-fast`. `preflight doctor` shows installed tools and the
+  coverage driver.
+- Configuration is `preflight.php` (zero-config without it): `Preflight::configure()->` with
+  `withSteps`/`addSteps`/`tune`/`without`, `exclude([...])` (drop findings from paths across every
+  tool), per-step options (`Phpstan::make()->level(9)`, `Tests::make()->minPatchCoverage(90)`), and
+  `forAgents()`. Read `docs/configuration.md` / `docs/steps.md` for the full set before editing it.
 - `Uncovered changed lines: …` means lines you changed lack a test. Cover them by testing the
   public path that reaches the code (private methods are covered transitively). For a
   genuinely untestable line, exclude it with a bare `// @codeCoverageIgnoreStart` /

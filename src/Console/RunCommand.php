@@ -11,6 +11,7 @@ use PdxApps\Preflight\Contracts\ProcessExecutor;
 use PdxApps\Preflight\Mode;
 use PdxApps\Preflight\OutputFormat;
 use PdxApps\Preflight\Preflight;
+use PdxApps\Preflight\Render\HumanStepView;
 use PdxApps\Preflight\Render\RendererRegistry;
 use PdxApps\Preflight\Report\FreshnessCache;
 use PdxApps\Preflight\Report\ReportInclude;
@@ -19,10 +20,12 @@ use PdxApps\Preflight\Result\RunResult;
 use PdxApps\Preflight\Runner\SymfonyProcessExecutor;
 use PdxApps\Preflight\Scope\ScopeRequest;
 use PdxApps\Preflight\Scope\ScopeResolver;
+use PdxApps\Preflight\Scope\StepSelection;
 use PdxApps\Preflight\Support\GitFiles;
 use PdxApps\Preflight\Support\InputHasher;
 use PdxApps\Preflight\Support\ProjectRoot;
 use PdxApps\Preflight\Support\SystemClock;
+use PdxApps\Preflight\Support\TargetSet;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -64,6 +67,8 @@ final class RunCommand extends Command
                 . 'e.g. --write=markdown:summary.md --write=sarif:preflight.sarif.',
             )
             ->addOption('fail-fast', null, InputOption::VALUE_NONE, 'Stop at the first failing step.')
+            ->addOption('only', null, InputOption::VALUE_REQUIRED, 'Run only these steps, by name (e.g. --only=phpstan,test).')
+            ->addOption('skip', null, InputOption::VALUE_REQUIRED, 'Run every step except these, by name (e.g. --skip=phpmd).')
             ->addOption('files', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of files to check.')
             ->addOption('dirty', null, InputOption::VALUE_NONE, 'Only check files changed in the working tree.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Check the whole project (overrides a dirty-by-default config).')
@@ -90,6 +95,11 @@ final class RunCommand extends Command
             $configuration = $configuration->withFailFast(true);
         }
 
+        $selection = StepSelection::fromCli($input->getOption('only'), $input->getOption('skip'));
+        if (! $selection->isEmpty()) {
+            $configuration = $configuration->withSelection($selection->only, $selection->skip);
+        }
+
         $request = $this->scopeRequest($input, $configuration);
         $git = new GitFiles($executor);
         $targets = (new ScopeResolver($git))->resolve($request, $root, $configuration->modules);
@@ -106,16 +116,55 @@ final class RunCommand extends Command
         }
 
         $mode = $this->resolveMode($input, $configuration);
-        $result = Preflight::make($configuration, projectRoot: $root, executor: $executor)->run($mode, $targets, $changedLines);
-
         $format = $this->resolveFormat($input, $configuration->defaultFormat);
-        (new RendererRegistry())->for($format, isTty: $output->isDecorated())->render($result, $output);
+
+        $result = $this->runAndRender($format, $configuration, $root, $executor, $mode, $targets, $changedLines, $output);
 
         $this->writeOutputs($input, $result);
         $cache->store($hash, $result->isSuccess());
         $this->writeReport($input, $result, $mode);
 
         return $result->isSuccess() ? Command::SUCCESS : Command::FAILURE;
+    }
+
+    /**
+     * Run the checks and render them. When the resolved format is human, the run is streamed —
+     * each step's result line prints the moment it finishes, with the summary after — so the
+     * user watches progress instead of waiting for the whole run. Every other format renders
+     * once from the finished result (a half-streamed JSON/SARIF document would be invalid).
+     *
+     * @param  (\Closure(): array<string, list<array{int, int}>>)  $changedLines
+     */
+    private function runAndRender(
+        OutputFormat $format,
+        Configuration $configuration,
+        string $root,
+        ProcessExecutor $executor,
+        Mode $mode,
+        TargetSet $targets,
+        \Closure $changedLines,
+        OutputInterface $output,
+    ): RunResult {
+        if ($format->resolve($output->isDecorated()) === OutputFormat::Human) {
+            $view = new HumanStepView();
+            $output->writeln('');
+            $reporter = new StreamingProgressReporter($output, $view);
+
+            $result = Preflight::make($configuration, projectRoot: $root, executor: $executor, progress: $reporter)
+                ->run($mode, $targets, $changedLines);
+
+            $output->writeln('');
+            $view->summary($result, $output);
+
+            return $result;
+        }
+
+        $result = Preflight::make($configuration, projectRoot: $root, executor: $executor)
+            ->run($mode, $targets, $changedLines);
+
+        (new RendererRegistry())->for($format, isTty: $output->isDecorated())->render($result, $output);
+
+        return $result;
     }
 
     /**

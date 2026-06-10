@@ -30,7 +30,9 @@ return Preflight::configure()
 | `->withSteps([...])` | Set the exact steps **and order**. Items are `Foo::class` (defaults) or `Foo::make()->...` (configured). Omit entirely to auto-detect every installed default. |
 | `->addSteps([...])` | Keep the base set (defaults or `withSteps`) and **append** extra steps — e.g. the opt-in `ComposerNormalize`/`Deptrac` — without re-listing it. |
 | `->tune(Step)` | Keep the auto-detected default set but reconfigure one step. |
-| `->without(Foo::class)` | Drop one step from the default set. |
+| `->without(Foo::class)` | Drop one step from the default set (by class). |
+| `->only([...])` | Run only these steps, by **name** (e.g. `['phpstan', 'test']`). CLI: `--only`. |
+| `->withSkip([...])` | Drop these steps, by **name** (e.g. `['phpmd']`). CLI: `--skip`. |
 | `->withPaths([...])` | Directories to scan (default: auto). |
 | `->exclude([...])` | Drop findings from these paths, across every tool (see below). |
 | `->withModules(dir, app, tests)` | Enable `--module` scoping (see below). |
@@ -38,6 +40,21 @@ return Preflight::configure()
 
 `addSteps()`/`tune()`/`without()` adjust the **default** set; `withSteps()` replaces it. Use
 one approach or the other.
+
+### Running a subset (`--only` / `--skip`)
+
+To run part of the pipeline for one invocation — without editing `preflight.php` — select steps
+by name on the CLI:
+
+```bash
+vendor/bin/preflight --only=phpstan,test   # just these steps
+vendor/bin/preflight --skip=phpmd          # everything except these
+```
+
+The names are the ones `preflight steps` lists. `--only` and `--skip` are mutually exclusive,
+and an unknown name is a hard error that lists the valid names (a typo fails loudly rather than
+silently running everything). The same selection is available persistently in config as
+`->only(['phpstan', 'test'])` and `->withSkip(['phpmd'])`.
 
 ```php
 return Preflight::configure()

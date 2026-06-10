@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--only` / `--skip` step selection.** Run a subset of the pipeline by step name without
+  editing `preflight.php`: `preflight --only=phpstan,test` runs just those, `preflight
+  --skip=phpmd` runs everything else. The two are mutually exclusive, and an unknown name is a
+  hard error that lists the valid step names (so a typo fails loudly instead of silently
+  running everything). Also available in config as `->only([...])` / `->withSkip([...])` — the
+  latter was previously inert and is now wired in.
+- **Live step-by-step progress in the human format.** A `human` run now prints each step's
+  result the moment it finishes — watch `PASS`/`FAIL` land one by one instead of waiting for
+  the whole run — with the summary after. On an interactive terminal a transient "running …"
+  line shows the step in flight, then is replaced by its result; piped/CI output gets the same
+  lines incrementally (no control codes). Machine formats (json, sarif, github, markdown) are
+  unchanged — they still render once from the finished result. Internally this is a
+  `ProgressReporter` the runner calls per step, so a future watcher or parallel runner can hook
+  in without touching any step.
+
+### Changed
+
+- **Thorough agent docs.** The Claude skill (and the `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`/Cursor
+  snippets and sub-agent) now teach the full CLI surface — every scope/mode/format flag and the
+  `doctor`/`steps`/`init`/`install` commands — and how `preflight.php` is configured (step
+  selection, `exclude()`, per-step options, coverage gates, `forAgents()`), not just the
+  fix/check loop. The skill points at `docs/configuration.md` and `docs/steps.md` for the
+  exhaustive reference.
+
 ## [0.1.3] - 2026-06-07
 
 ### Added

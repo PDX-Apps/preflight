@@ -22,12 +22,13 @@ final readonly class Configuration
 {
     /**
      * @param  list<Step>|null  $steps
-     * @param  list<string>  $skip
+     * @param  list<string>  $skip step names to drop from the resolved set (e.g. ['phpmd'])
      * @param  list<Step>  $added
      * @param  array<class-string<Step>, Step>  $tunes
      * @param  list<class-string<Step>>  $without
      * @param  list<string>|null  $paths
      * @param  list<string>  $exclude path globs/prefixes whose findings are dropped from the result
+     * @param  list<string>  $only step names to keep, dropping all others (e.g. ['phpstan', 'test'])
      */
     public function __construct(
         public ?array $steps = null,
@@ -42,6 +43,7 @@ final readonly class Configuration
         public bool $fixByDefault = false,
         public bool $dirtyByDefault = false,
         public array $exclude = [],
+        public array $only = [],
     ) {
     }
 
@@ -63,6 +65,34 @@ final readonly class Configuration
             fixByDefault: $this->fixByDefault,
             dirtyByDefault: $this->dirtyByDefault,
             exclude: $this->exclude,
+            only: $this->only,
+        );
+    }
+
+    /**
+     * A copy with the step selection overridden — used when the CLI `--only`/`--skip` flags
+     * are set. Each is a list of step names ({@see Step::name()}); they are applied in
+     * {@see resolveSteps()} and an unknown name there is a hard error.
+     *
+     * @param  list<string>  $only
+     * @param  list<string>  $skip
+     */
+    public function withSelection(array $only, array $skip): self
+    {
+        return new self(
+            steps: $this->steps,
+            modules: $this->modules,
+            skip: $skip,
+            added: $this->added,
+            tunes: $this->tunes,
+            without: $this->without,
+            failFast: $this->failFast,
+            defaultFormat: $this->defaultFormat,
+            paths: $this->paths,
+            fixByDefault: $this->fixByDefault,
+            dirtyByDefault: $this->dirtyByDefault,
+            exclude: $this->exclude,
+            only: $only,
         );
     }
 
@@ -82,7 +112,8 @@ final readonly class Configuration
      * Starts from the explicit list, or the given auto-detected set when none was listed,
      * then appends any `added` steps (a class already in the base keeps its position and
      * instance). Removes any class named in `without`, replaces matching classes with their
-     * tuned instance (in place), and appends tuned classes not already present.
+     * tuned instance (in place), and appends tuned classes not already present. Finally the
+     * `only`/`skip` name filters are applied (see {@see applySelection()}).
      *
      * @param  list<Step>  $autoSteps
      * @return list<Step>
@@ -106,6 +137,48 @@ final readonly class Configuration
             }
         }
 
-        return array_values($resolved);
+        return $this->applySelection(array_values($resolved));
+    }
+
+    /**
+     * Narrow the resolved set by step name: `only` keeps just those names (dropping the rest),
+     * `skip` drops those names. An unknown name in either list is a hard error — so a typo
+     * fails loudly with the valid names rather than silently running everything (or nothing).
+     *
+     * @param  list<Step>  $steps
+     * @return list<Step>
+     */
+    private function applySelection(array $steps): array
+    {
+        if ($this->only === [] && $this->skip === []) {
+            return $steps;
+        }
+
+        $names = array_map(static fn (Step $step): string => $step->name(), $steps);
+        $this->assertKnownNames([...$this->only, ...$this->skip], $names);
+
+        return array_values(array_filter($steps, function (Step $step): bool {
+            $name = $step->name();
+
+            return ($this->only === [] || in_array($name, $this->only, true))
+                && ! in_array($name, $this->skip, true);
+        }));
+    }
+
+    /**
+     * @param  list<string>  $requested
+     * @param  list<string>  $available
+     */
+    private function assertKnownNames(array $requested, array $available): void
+    {
+        foreach ($requested as $name) {
+            if (! in_array($name, $available, true)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Unknown step "%s" in --only/--skip. Available steps: %s.',
+                    $name,
+                    $available === [] ? '(none)' : implode(', ', $available),
+                ));
+            }
+        }
     }
 }

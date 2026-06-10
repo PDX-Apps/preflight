@@ -131,6 +131,59 @@ final class RunCommandTest extends TestCase
         $this->assertStringContainsString('app/A.php', $tester->getDisplay());
     }
 
+    public function test_only_runs_just_the_named_step(): void
+    {
+        $project = $this->projectWithPint();
+        // A second tool is available, but --only=pint must run Pint alone (one process).
+        $project->file('vendor/bin/phpstan', '#!/usr/bin/env php');
+        $executor = (new FakeProcessExecutor())->queueSuccess('{"result":"pass"}');
+
+        $tester = $this->tester($project, $executor);
+        $exit = $tester->execute(['--only' => 'pint', '--format' => 'agent'], ['decorated' => false]);
+
+        $this->assertSame(0, $exit);
+        $this->assertCount(1, $executor->executed, 'only the pint step should have run');
+    }
+
+    public function test_an_unknown_only_name_is_rejected_with_the_valid_names(): void
+    {
+        $project = $this->projectWithPint();
+        $tester = $this->tester($project, new FakeProcessExecutor());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown step "nope"');
+        $this->expectExceptionMessage('pint');
+
+        $tester->execute(['--only' => 'nope', '--format' => 'agent'], ['decorated' => false]);
+    }
+
+    public function test_only_and_skip_together_is_rejected(): void
+    {
+        $project = $this->projectWithPint();
+        $tester = $this->tester($project, new FakeProcessExecutor());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('either --only or --skip');
+
+        $tester->execute(['--only' => 'pint', '--skip' => 'phpmd'], ['decorated' => false]);
+    }
+
+    public function test_human_format_streams_each_step_then_a_summary(): void
+    {
+        $project = $this->projectWithPint();
+        $executor = (new FakeProcessExecutor())->queueSuccess('{"result":"pass"}');
+
+        $tester = $this->tester($project, $executor);
+        $exit = $tester->execute(['--format' => 'human'], ['decorated' => false]);
+
+        $display = $tester->getDisplay();
+        $this->assertSame(0, $exit);
+        // The per-step line (streamed live) and the closing summary both appear.
+        $this->assertStringContainsString('Pint', $display);
+        $this->assertStringContainsString('PASS', $display);
+        $this->assertStringContainsString('passed', $display);
+    }
+
     public function test_json_format_emits_a_parseable_document(): void
     {
         $project = $this->projectWithPint();

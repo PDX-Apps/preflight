@@ -7,8 +7,10 @@ namespace PdxApps\Preflight;
 use PdxApps\Preflight\Config\Configuration;
 use PdxApps\Preflight\Config\ConfigurationBuilder;
 use PdxApps\Preflight\Contracts\ProcessExecutor;
+use PdxApps\Preflight\Contracts\ProgressReporter;
 use PdxApps\Preflight\Result\FindingExcluder;
 use PdxApps\Preflight\Result\RunResult;
+use PdxApps\Preflight\Runner\NullProgressReporter;
 use PdxApps\Preflight\Runner\SequentialRunner;
 use PdxApps\Preflight\Runner\SymfonyProcessExecutor;
 use PdxApps\Preflight\Steps\StepRegistry;
@@ -31,6 +33,7 @@ final readonly class Preflight
         private string $projectRoot,
         private ProcessExecutor $executor,
         private StepRegistry $registry,
+        private ProgressReporter $progress,
     ) {
     }
 
@@ -50,12 +53,14 @@ final readonly class Preflight
         Configuration $configuration,
         ?string $projectRoot = null,
         ?ProcessExecutor $executor = null,
+        ?ProgressReporter $progress = null,
     ): self {
         return new self(
             configuration: $configuration,
             projectRoot: $projectRoot ?? ProjectRoot::discoverFrom(getcwd() ?: '.'),
             executor: $executor ?? new SymfonyProcessExecutor(),
             registry: new StepRegistry(),
+            progress: $progress ?? new NullProgressReporter(),
         );
     }
 
@@ -71,7 +76,7 @@ final readonly class Preflight
     public function run(Mode $mode, ?TargetSet $targets = null, \Closure|array $changedLines = []): RunResult
     {
         $context = new Context($this->projectRoot, $targets ?? TargetSet::wholeProject(), CoverageDriver::detect(), $changedLines);
-        $runner = new SequentialRunner($this->executor, failFast: $this->configuration->failFast);
+        $runner = new SequentialRunner($this->executor, failFast: $this->configuration->failFast, progress: $this->progress);
 
         // With no explicit steps configured, fall back to every installed built-in.
         $autoSteps = $this->configuration->hasExplicitSteps() ? [] : $this->registry->installed($context);

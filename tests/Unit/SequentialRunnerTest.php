@@ -18,6 +18,7 @@ use PdxApps\Preflight\Targeting;
 use PdxApps\Preflight\Tests\Support\FakeProcessExecutor;
 use PdxApps\Preflight\Tests\Support\FakeStep;
 use PdxApps\Preflight\Tests\Support\NoFindingsParser;
+use PdxApps\Preflight\Tests\Support\RecordingProgressReporter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -307,5 +308,50 @@ final class SequentialRunnerTest extends TestCase
         // The temp file was cleaned up.
         $this->assertNotNull($captured);
         $this->assertFileDoesNotExist($captured);
+    }
+
+    public function test_it_reports_each_step_to_a_progress_reporter_as_it_starts_and_finishes(): void
+    {
+        $executor = (new FakeProcessExecutor())->queueSuccess()->queueFailure(1);
+        $progress = new RecordingProgressReporter();
+        $runner = new SequentialRunner($executor, progress: $progress);
+
+        $steps = [
+            new FakeStep('a', StepPlan::command('a', ['a'])),
+            new FakeStep('b', StepPlan::command('b', ['b'])),
+        ];
+
+        $runner->run($steps, $this->context(), Mode::Check);
+
+        // started(a), finished(a), started(b), finished(b) — interleaved, in order.
+        $this->assertSame([
+            'started:a',
+            'finished:a:passed',
+            'started:b',
+            'finished:b:failed',
+        ], $progress->events);
+    }
+
+    public function test_fail_fast_still_reports_the_skipped_steps_to_the_progress_reporter(): void
+    {
+        $executor = (new FakeProcessExecutor())->queueFailure(1);
+        $progress = new RecordingProgressReporter();
+        $runner = new SequentialRunner($executor, failFast: true, progress: $progress);
+
+        $steps = [
+            new FakeStep('a', StepPlan::command('a', ['a'])),
+            new FakeStep('b', StepPlan::command('b', ['b'])),
+        ];
+
+        $runner->run($steps, $this->context(), Mode::Check);
+
+        // The aborted second step is still announced and finished (as skipped), so a live
+        // display shows every step rather than silently stopping.
+        $this->assertSame([
+            'started:a',
+            'finished:a:failed',
+            'started:b',
+            'finished:b:skipped',
+        ], $progress->events);
     }
 }

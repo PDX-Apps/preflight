@@ -192,4 +192,65 @@ final class ConfigurationTest extends TestCase
 
         $this->assertSame([], $config->resolveSteps(autoSteps: [ConfigurableStep::make()]));
     }
+
+    public function test_only_keeps_just_the_named_steps(): void
+    {
+        $auto = [ConfigurableStep::make(), SecondConfigurableStep::make()];
+        $config = new Configuration(only: ['second-configurable-step']);
+
+        $resolved = $config->resolveSteps(autoSteps: $auto);
+
+        $this->assertCount(1, $resolved);
+        $this->assertInstanceOf(SecondConfigurableStep::class, $resolved[0]);
+    }
+
+    public function test_skip_drops_the_named_steps(): void
+    {
+        $auto = [ConfigurableStep::make(), SecondConfigurableStep::make()];
+        $config = new Configuration(skip: ['second-configurable-step']);
+
+        $resolved = $config->resolveSteps(autoSteps: $auto);
+
+        $this->assertCount(1, $resolved);
+        $this->assertInstanceOf(ConfigurableStep::class, $resolved[0]);
+    }
+
+    public function test_an_unknown_only_name_is_a_hard_error_listing_the_valid_names(): void
+    {
+        $config = new Configuration(only: ['nope']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown step "nope"');
+        $this->expectExceptionMessage('configurable-step');
+
+        $config->resolveSteps(autoSteps: [ConfigurableStep::make()]);
+    }
+
+    public function test_an_unknown_skip_name_is_a_hard_error(): void
+    {
+        $config = new Configuration(skip: ['typo']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown step "typo"');
+
+        $config->resolveSteps(autoSteps: [ConfigurableStep::make()]);
+    }
+
+    public function test_with_selection_overrides_only_and_skip_keeping_the_rest(): void
+    {
+        $base = new Configuration(
+            steps: [ConfigurableStep::make()],
+            failFast: true,
+            exclude: ['app/Providers'],
+            skip: ['old'],
+        );
+
+        $selected = $base->withSelection(['configurable-step'], []);
+
+        $this->assertSame(['old'], $base->skip, 'the original is untouched');
+        $this->assertSame(['configurable-step'], $selected->only);
+        $this->assertSame([], $selected->skip);
+        $this->assertTrue($selected->failFast);
+        $this->assertSame(['app/Providers'], $selected->exclude);
+    }
 }

@@ -6,6 +6,7 @@ namespace PdxApps\Preflight\Runner;
 
 use PdxApps\Preflight\Context;
 use PdxApps\Preflight\Contracts\ProcessExecutor;
+use PdxApps\Preflight\Contracts\ProgressReporter;
 use PdxApps\Preflight\Contracts\Runner;
 use PdxApps\Preflight\Contracts\Step;
 use PdxApps\Preflight\Finding;
@@ -31,6 +32,7 @@ final readonly class SequentialRunner implements Runner
     public function __construct(
         private ProcessExecutor $executor,
         private bool $failFast = false,
+        private ProgressReporter $progress = new NullProgressReporter(),
     ) {
     }
 
@@ -40,16 +42,16 @@ final readonly class SequentialRunner implements Runner
         $aborted = false;
 
         foreach ($steps as $step) {
-            if ($aborted) {
-                $results[] = StepResult::skipped($step->name(), $step->label(), 'skipped after an earlier failure (fail-fast)');
+            $this->progress->stepStarted($step);
 
-                continue;
-            }
+            $result = $aborted
+                ? StepResult::skipped($step->name(), $step->label(), 'skipped after an earlier failure (fail-fast)')
+                : $this->runStep($step, $context, $mode);
 
-            $result = $this->runStep($step, $context, $mode);
             $results[] = $result;
+            $this->progress->stepFinished($result);
 
-            if ($this->failFast && $result->isFailure()) {
+            if (! $aborted && $this->failFast && $result->isFailure()) {
                 $aborted = true;
             }
         }

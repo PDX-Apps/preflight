@@ -40,6 +40,17 @@ final class ConfigurationBuilderTest extends TestCase
         $this->assertSame(['app/Providers', 'app/Actions/Fortify', 'database'], $config->exclude);
     }
 
+    public function test_only_and_skip_record_step_name_selections(): void
+    {
+        $config = (new ConfigurationBuilder())
+            ->only(['phpstan', 'test'])
+            ->withSkip(['phpmd'])
+            ->build();
+
+        $this->assertSame(['phpstan', 'test'], $config->only);
+        $this->assertSame(['phpmd'], $config->skip);
+    }
+
     public function test_with_steps_accepts_class_strings_and_normalizes_them_to_instances(): void
     {
         $config = (new ConfigurationBuilder())

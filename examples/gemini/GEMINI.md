@@ -18,6 +18,16 @@ Notes:
 - `--format=agent` prints errors only (no ANSI, no success noise).
 - `--dirty` limits the run to files you changed; drop it to check the whole project.
 - One file: `vendor/bin/preflight --files=path/to/File.php --format=agent`.
+- More scope/mode: `--fix`/`--check`, `--since=main` (changed since a ref — CI/patch-coverage),
+  `--all` (whole project), `--module=<Name>`, `--only=phpstan,test` / `--skip=phpmd` (pick steps
+  by name), `--fail-fast`, `--format=json`. Other commands:
+  `preflight doctor` (installed tools + coverage driver), `preflight steps`, `preflight init`,
+  `preflight install`.
+- **Config** is `preflight.php` (zero-config without it). It returns `Preflight::configure()->...`:
+  `withSteps`/`addSteps`/`tune`/`without` to pick steps; `exclude([...])` to drop findings from
+  paths across every tool; per-step options (`Phpstan::make()->level(9)`,
+  `Tests::make()->minCoverage(80)->minPatchCoverage(90)`); `forAgents()` for agent-friendly
+  defaults. Full reference: `docs/configuration.md`, `docs/steps.md`.
 - `Uncovered changed lines: …` means lines you changed lack a test — cover them via the public
   path that reaches the code. For a genuinely untestable line, exclude it with a bare
   `// @codeCoverageIgnoreStart` / `// @codeCoverageIgnoreEnd` (reason on its own line). If

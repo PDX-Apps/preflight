@@ -33,6 +33,9 @@ final class ConfigurationBuilder
     /** @var list<string> */
     private array $skip = [];
 
+    /** @var list<string> */
+    private array $only = [];
+
     /** @var list<Step>|null */
     private ?array $steps = null;
 
@@ -86,11 +89,25 @@ final class ConfigurationBuilder
     }
 
     /**
+     * Drop these steps from the resolved set, by step name (e.g. `['phpmd']`).
+     *
      * @param  list<string>  $skip
      */
     public function withSkip(array $skip): self
     {
         $this->skip = $skip;
+
+        return $this;
+    }
+
+    /**
+     * Run only these steps, by step name, dropping all others (e.g. `['phpstan', 'test']`).
+     *
+     * @param  list<string>  $only
+     */
+    public function only(array $only): self
+    {
+        $this->only = $only;
 
         return $this;
     }
@@ -238,6 +255,7 @@ final class ConfigurationBuilder
             fixByDefault: $this->fixByDefault,
             dirtyByDefault: $this->dirtyByDefault,
             exclude: $this->exclude,
+            only: $this->only,
         );
     }
 
