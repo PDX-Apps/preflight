@@ -92,4 +92,34 @@ final class StepResultTest extends TestCase
         $this->assertSame(['patch coverage 100.00% (5/5 changed lines)'], $result->metrics);
         $this->assertSame(['patch coverage 100.00% (5/5 changed lines)'], $result->toArray()['metrics']);
     }
+
+    public function test_with_findings_returns_a_copy_with_new_findings_and_status_keeping_the_rest(): void
+    {
+        $original = new Finding('phpstan', Severity::Error, 'boom', 'app/A.php', 1);
+        $kept = new Finding('phpstan', Severity::Warning, 'style', 'app/B.php', 2);
+        $base = StepResult::failed(
+            'phpstan',
+            'PHPStan',
+            findings: [$original],
+            durationSeconds: 1.25,
+            exitCode: 1,
+            output: 'raw output',
+        );
+
+        $copy = $base->withFindings([$kept], StepStatus::Passed);
+
+        // The original is untouched.
+        $this->assertSame([$original], $base->findings);
+        $this->assertSame(StepStatus::Failed, $base->status);
+
+        // The copy carries the new findings and status, and preserves everything else.
+        $this->assertSame([$kept], $copy->findings);
+        $this->assertSame(StepStatus::Passed, $copy->status);
+        $this->assertTrue($copy->isSuccess());
+        $this->assertSame('phpstan', $copy->name);
+        $this->assertSame('PHPStan', $copy->label);
+        $this->assertSame(1.25, $copy->durationSeconds);
+        $this->assertSame(1, $copy->exitCode);
+        $this->assertSame('raw output', $copy->output);
+    }
 }
