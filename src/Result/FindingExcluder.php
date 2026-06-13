@@ -31,11 +31,20 @@ final readonly class FindingExcluder
             return $result;
         }
 
-        return new RunResult(array_map($this->filterStep(...), $result->steps));
+        return new RunResult(array_map($this->filter(...), $result->steps));
     }
 
-    private function filterStep(StepResult $step): StepResult
+    /**
+     * Drop the excluded findings from a single step's result, adjusting its verdict if every
+     * error came from an excluded path. Applied per-step by the runner so a streamed progress
+     * line reflects the same outcome the final summary will — not the pre-exclusion state.
+     */
+    public function filter(StepResult $step): StepResult
     {
+        if ($this->patterns === []) {
+            return $step;
+        }
+
         if (! $step->status->didRun()) {
             return $step;
         }

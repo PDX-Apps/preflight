@@ -332,6 +332,34 @@ final class SequentialRunnerTest extends TestCase
         ], $progress->events);
     }
 
+    public function test_excluded_findings_are_dropped_per_step_so_progress_sees_the_final_verdict(): void
+    {
+        // PHPStan exits non-zero with one finding, but it lives under an excluded path.
+        // The exclude must apply before the progress reporter sees the result — otherwise a
+        // live run shows a phantom FAIL the final summary then contradicts with a PASS.
+        $executor = (new FakeProcessExecutor())->queueFailure(1, 'x');
+        $progress = new RecordingProgressReporter();
+        $excluder = new \PdxApps\Preflight\Result\FindingExcluder(['config']);
+        $runner = new SequentialRunner($executor, progress: $progress, excluder: $excluder);
+
+        $parser = new class () implements \PdxApps\Preflight\Contracts\OutputParser {
+            public function parse(\PdxApps\Preflight\Process\ProcessResult $result): \PdxApps\Preflight\Parsing\ParseResult
+            {
+                return new \PdxApps\Preflight\Parsing\ParseResult([
+                    new \PdxApps\Preflight\Finding('phpstan', \PdxApps\Preflight\Severity::Error, 'bad type', file: 'config/filesystems.php', line: 44),
+                ], [], []);
+            }
+        };
+        $plan = StepPlan::command('phpstan', ['phpstan'])->parseWith($parser);
+
+        $result = $runner->run([new FakeStep('phpstan', $plan)], $this->context(), Mode::Check);
+
+        $this->assertSame(StepStatus::Passed, $result->steps[0]->status, 'every finding came from an excluded path');
+        $this->assertSame([], $result->steps[0]->findings);
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame(['started:phpstan', 'finished:phpstan:passed'], $progress->events, 'the streamed line matches the post-exclusion verdict');
+    }
+
     public function test_fail_fast_still_reports_the_skipped_steps_to_the_progress_reporter(): void
     {
         $executor = (new FakeProcessExecutor())->queueFailure(1);

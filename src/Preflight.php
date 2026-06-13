@@ -76,15 +76,21 @@ final readonly class Preflight
     public function run(Mode $mode, ?TargetSet $targets = null, \Closure|array $changedLines = []): RunResult
     {
         $context = new Context($this->projectRoot, $targets ?? TargetSet::wholeProject(), CoverageDriver::detect(), $changedLines);
-        $runner = new SequentialRunner($this->executor, failFast: $this->configuration->failFast, progress: $this->progress);
+
+        // The excluder runs inside the runner, per-step — so a streamed progress line shows the
+        // same verdict (and findings) the final summary will, having already dropped findings
+        // from excluded paths (e.g. framework scaffolding) rather than the pre-exclusion state.
+        $runner = new SequentialRunner(
+            $this->executor,
+            failFast: $this->configuration->failFast,
+            progress: $this->progress,
+            excluder: new FindingExcluder($this->configuration->exclude),
+        );
 
         // With no explicit steps configured, fall back to every installed built-in.
         $autoSteps = $this->configuration->hasExplicitSteps() ? [] : $this->registry->installed($context);
         $steps = $this->configuration->resolveSteps($autoSteps);
 
-        $result = $runner->run($steps, $context, $mode);
-
-        // Drop findings from excluded paths (e.g. framework scaffolding) before the verdict.
-        return (new FindingExcluder($this->configuration->exclude))->apply($result);
+        return $runner->run($steps, $context, $mode);
     }
 }

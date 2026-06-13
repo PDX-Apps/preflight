@@ -14,6 +14,7 @@ use PdxApps\Preflight\Mode;
 use PdxApps\Preflight\Process\ProcessResult;
 use PdxApps\Preflight\Process\ProcessSpec;
 use PdxApps\Preflight\Process\StepPlan;
+use PdxApps\Preflight\Result\FindingExcluder;
 use PdxApps\Preflight\Result\RunResult;
 use PdxApps\Preflight\Result\StepResult;
 use PdxApps\Preflight\Severity;
@@ -33,6 +34,7 @@ final readonly class SequentialRunner implements Runner
         private ProcessExecutor $executor,
         private bool $failFast = false,
         private ProgressReporter $progress = new NullProgressReporter(),
+        private FindingExcluder $excluder = new FindingExcluder([]),
     ) {
     }
 
@@ -46,7 +48,7 @@ final readonly class SequentialRunner implements Runner
 
             $result = $aborted
                 ? StepResult::skipped($step->name(), $step->label(), 'skipped after an earlier failure (fail-fast)')
-                : $this->runStep($step, $context, $mode);
+                : $this->excluder->filter($this->runStep($step, $context, $mode));
 
             $results[] = $result;
             $this->progress->stepFinished($result);

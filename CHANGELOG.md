@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-06-13
+
+### Fixed
+
+- **Excluded findings no longer flash a phantom failure during a live run.** `exclude()` was
+  applied once after the whole run, but the live per-step progress lines are printed *during*
+  it — so a step whose only findings sat under an excluded path (e.g. `config/` on a Laravel
+  app) streamed a red `FAIL` with those findings, then the final summary, having dropped them,
+  said "all checks passed". The two contradicted each other. The exclude now runs per-step
+  inside the runner, before each result is reported, so the streamed line shows the same
+  verdict the summary will — and a failure that's entirely excluded never appears as a failure.
+  This also means `--fail-fast` won't abort on a step whose findings are all excluded.
+
 ## [0.1.5] - 2026-06-12
 
 ### Added
@@ -160,7 +173,10 @@ Initial release — a framework-agnostic, AI/CI-native code-quality runner for P
 - **`init` / `steps` commands** — scaffold a `preflight.php` and list the configured
   steps with their availability.
 
-[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/PDX-Apps/preflight/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/PDX-Apps/preflight/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/PDX-Apps/preflight/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/PDX-Apps/preflight/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/PDX-Apps/preflight/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/PDX-Apps/preflight/compare/v0.1.0...v0.1.1
