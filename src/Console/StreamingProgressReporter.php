@@ -8,6 +8,8 @@ use PdxApps\Preflight\Contracts\ProgressReporter;
 use PdxApps\Preflight\Contracts\Step;
 use PdxApps\Preflight\Render\HumanStepView;
 use PdxApps\Preflight\Result\StepResult;
+use PdxApps\Preflight\Runner\NullProgressReporter;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -28,6 +30,24 @@ final readonly class StreamingProgressReporter implements ProgressReporter
         private OutputInterface $output,
         private HumanStepView $view = new HumanStepView(),
     ) {
+    }
+
+    /**
+     * A reporter that narrates a machine-format run on *stderr*, keeping the stdout document
+     * intact. Active only when stderr is an interactive terminal; for captured or piped output
+     * — where a CI log is indistinguishable from an agent reading combined streams — it's a
+     * no-op, so progress lines can never leak into a parsed payload.
+     */
+    public static function forMachineFormat(OutputInterface $output): ProgressReporter
+    {
+        if ($output instanceof ConsoleOutputInterface) {
+            $stderr = $output->getErrorOutput();
+            if ($stderr->isDecorated()) {
+                return new self($stderr);
+            }
+        }
+
+        return new NullProgressReporter();
     }
 
     public function stepStarted(Step $step): void

@@ -12,8 +12,8 @@ use PdxApps\Preflight\Support\Tool;
 
 /**
  * Executes an {@see InstallPlan}: sets `minimum-stability: dev` when a dev-branch package was
- * approved, runs `composer require --dev`, then (unless disabled) scaffolds config files and
- * delegates to a tool's own init (psalm). Side effects go through the injected
+ * approved, runs `composer require --dev`, then (unless disabled) scaffolds config files and,
+ * for any recipe that opts into it, delegates to a tool's own init command. Side effects go through the injected
  * {@see ProcessExecutor} and the filesystem, so it's testable; progress is returned as an
  * {@see InstallOutcome} rather than printed.
  */

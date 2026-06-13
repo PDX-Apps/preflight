@@ -93,11 +93,20 @@ For each tool it installs, `install` writes a sensible starter config (skip with
 | PHPStan | `phpstan.neon` | level 5 + your source dirs |
 | Rector | `rector.php` | `withPhpSets()` over your source dirs, skipping the PHP 8.5 property-`#[\Override]` rule (Psalm rejects it) |
 | PHPMD | `phpmd.xml` | a starter ruleset |
-| Psalm | — | delegated to `psalm --init` (it scans and picks a baseline) |
+| Psalm | `psalm.xml` | `errorLevel` 4 + your source dirs, with dead-code analysis off (see note) |
 
 Source dirs are detected from `app`, `src`, and `tests` (whichever exist), so the scaffolded
 configs point at real paths rather than guesses. Existing config files are never overwritten
 unless you pass `--force`.
+
+> **Why Psalm's dead-code analysis is off.** Psalm's own `--init` template turns on
+> `findUnusedCode`, but that pass is whole-program reachability — it flags anything it can't
+> trace a direct PHP call to. In a Laravel app the entry points are wired at runtime, not in
+> code Psalm can follow (controllers resolved by the router, service providers autoloaded from
+> a module's `composer.json`, seeders and test methods invoked reflectively), so it reports
+> them all as `UnusedClass` / `PossiblyUnusedMethod`. The scaffolded `psalm.xml` sets
+> `findUnusedCode="false"` (and `findUnusedBaselineEntry="false"`) for that reason; turn them
+> back on only if you annotate every framework entry point (`@psalm-api`, `@psalm-suppress`).
 
 ## Flags
 

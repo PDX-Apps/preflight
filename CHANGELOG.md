@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-06-12
+
+### Added
+
+- **Live step progress in machine formats too — on stderr.** Previously only the `human` format
+  streamed each step's `PASS`/`FAIL` as it finished; the other formats (agent, json, sarif,
+  github, markdown) printed nothing until the run ended, which looks hung on a slow run. Those
+  formats now narrate the same per-step lines on **stderr**, leaving the rendered document on
+  stdout untouched — so a human watching an agent-format run sees it work, while anything
+  parsing stdout still gets a clean, atomic payload. To avoid leaking progress into captured
+  output (where a CI log is indistinguishable from an agent reading combined streams), it's
+  active only when stderr is an interactive terminal.
+
+### Changed
+
+- **Psalm now gets a scaffolded `psalm.xml` instead of `psalm --init`.** `install` previously
+  delegated Psalm to its own `--init`, whose template hard-codes `findUnusedCode="true"`. That
+  dead-code pass is whole-program reachability and misreads Laravel, which wires its entry
+  points at runtime — controllers resolved by the router, service providers autoloaded from a
+  module's `composer.json`, seeders and test methods invoked reflectively all get reported as
+  `UnusedClass` / `PossiblyUnusedMethod`. Preflight now scaffolds its own `psalm.xml`
+  (`errorLevel` 4, project dirs from the detected source paths) with `findUnusedCode` and
+  `findUnusedBaselineEntry` off and a comment explaining why. This also folds Psalm into the
+  same stub mechanism as every other tool.
+
 ## [0.1.4] - 2026-06-12
 
 ### Added

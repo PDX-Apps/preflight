@@ -42,7 +42,7 @@ final class InstallCatalog
             'phpcs' => new InstallRecipe('squizlabs/php_codesniffer', '^4', configFile: 'phpcs.xml'),
             'phpstan' => new InstallRecipe('phpstan/phpstan', '^2', configFile: 'phpstan.neon'),
             'rector' => new InstallRecipe('rector/rector', '^2', configFile: 'rector.php'),
-            'psalm' => new InstallRecipe('vimeo/psalm', '^6', initArgs: ['--init']),
+            'psalm' => new InstallRecipe('vimeo/psalm', '^6', configFile: 'psalm.xml'),
             'phpmd' => new InstallRecipe(
                 'phpmd/phpmd',
                 '^3@dev',

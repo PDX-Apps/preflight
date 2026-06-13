@@ -86,6 +86,22 @@ final class ConfigScaffolderTest extends TestCase
         $this->assertNotFalse(simplexml_load_string((string) $phpmd));
     }
 
+    public function test_psalm_xml_is_valid_xml_with_dead_code_analysis_off(): void
+    {
+        $project = new TempProject();
+        $project->file('app/Foo.php', '<?php');
+
+        $content = $this->scaffolder($project)->contentsFor('psalm.xml');
+
+        $this->assertNotNull($content);
+        $xml = simplexml_load_string((string) $content);
+        $this->assertNotFalse($xml, 'psalm.xml must be valid XML');
+        // Dead-code analysis is off because it misreads Laravel's runtime-wired entry points.
+        $this->assertStringContainsString('findUnusedCode="false"', (string) $content);
+        $this->assertStringContainsString('findUnusedBaselineEntry="false"', (string) $content);
+        $this->assertStringContainsString('<directory name="app" />', (string) $content);
+    }
+
     public function test_an_unknown_file_has_no_content(): void
     {
         $this->assertNull($this->scaffolder(new TempProject())->contentsFor('unknown.conf'));

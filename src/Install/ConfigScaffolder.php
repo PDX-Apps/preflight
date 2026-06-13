@@ -25,6 +25,7 @@ final readonly class ConfigScaffolder
         'rector.php' => 'rector.php.stub',
         'pint.json' => 'pint.json.stub',
         'phpmd.xml' => 'phpmd.xml.stub',
+        'psalm.xml' => 'psalm.xml.stub',
     ];
 
     public function __construct(private string $projectRoot)
@@ -61,6 +62,7 @@ final readonly class ConfigScaffolder
         return strtr($template, [
             '{{ paths }}' => $this->pathList($file),
             '{{ files }}' => $this->fileList(),
+            '{{ directories }}' => $this->directoryList(),
         ]);
     }
 
@@ -81,6 +83,15 @@ final readonly class ConfigScaffolder
     {
         return implode("\n", array_map(
             static fn (string $p): string => '    <file>' . $p . '</file>',
+            $this->sourcePaths(),
+        ));
+    }
+
+    /** Psalm lists source dirs as `<directory>` elements inside `<projectFiles>`. */
+    private function directoryList(): string
+    {
+        return implode("\n", array_map(
+            static fn (string $p): string => '        <directory name="' . $p . '" />',
             $this->sourcePaths(),
         ));
     }

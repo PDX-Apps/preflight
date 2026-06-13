@@ -128,10 +128,15 @@ final class RunCommand extends Command
     }
 
     /**
-     * Run the checks and render them. When the resolved format is human, the run is streamed —
-     * each step's result line prints the moment it finishes, with the summary after — so the
-     * user watches progress instead of waiting for the whole run. Every other format renders
-     * once from the finished result (a half-streamed JSON/SARIF document would be invalid).
+     * Run the checks and render them. When the resolved format is human, the run is streamed to
+     * stdout — each step's result line prints the moment it finishes, with the summary after.
+     *
+     * Every other format renders once from the finished result, because its output is a single
+     * document that must stay intact (a half-streamed JSON/SARIF document would be invalid). To
+     * still narrate the wait, those formats stream the same per-step lines to *stderr* — a side
+     * channel that never touches the stdout payload — but only when stderr is an interactive
+     * terminal. When output is captured or piped we can't tell a CI log from an agent grabbing
+     * combined stdout+stderr, so we stay silent rather than risk polluting a parsed payload.
      *
      * @param  (\Closure(): array<string, list<array{int, int}>>)  $changedLines
      */
@@ -159,8 +164,12 @@ final class RunCommand extends Command
             return $result;
         }
 
-        $result = Preflight::make($configuration, projectRoot: $root, executor: $executor)
-            ->run($mode, $targets, $changedLines);
+        $result = Preflight::make(
+            $configuration,
+            projectRoot: $root,
+            executor: $executor,
+            progress: StreamingProgressReporter::forMachineFormat($output),
+        )->run($mode, $targets, $changedLines);
 
         (new RendererRegistry())->for($format, isTty: $output->isDecorated())->render($result, $output);
 

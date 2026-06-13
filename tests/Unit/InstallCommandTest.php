@@ -84,7 +84,7 @@ final class InstallCommandTest extends TestCase
         $this->assertStringContainsString('- src', (string) file_get_contents($project->root . '/phpstan.neon'));
     }
 
-    public function test_it_delegates_to_psalm_init(): void
+    public function test_it_scaffolds_a_psalm_config_with_dead_code_analysis_off(): void
     {
         $project = new TempProject();
         $project->file('composer.json', '{}');
@@ -92,13 +92,17 @@ final class InstallCommandTest extends TestCase
 
         $this->tester($project, $executor)->execute(['--yes' => true], ['interactive' => false]);
 
-        $ranInit = false;
+        $this->assertFileExists($project->root . '/psalm.xml');
+        $psalm = (string) file_get_contents($project->root . '/psalm.xml');
+        $this->assertStringContainsString('findUnusedCode="false"', $psalm);
+
+        // It is scaffolded, not delegated to the tool's own init.
         foreach ($executor->commands() as $command) {
-            if (str_ends_with($command[0], '/vendor/bin/psalm') && in_array('--init', $command, true)) {
-                $ranInit = true;
-            }
+            $this->assertFalse(
+                str_ends_with($command[0], '/vendor/bin/psalm') && in_array('--init', $command, true),
+                'psalm --init should no longer be run',
+            );
         }
-        $this->assertTrue($ranInit, 'psalm --init should be delegated to');
     }
 
     public function test_with_phpmd_sets_dev_stability_and_requires_the_dev_branch(): void

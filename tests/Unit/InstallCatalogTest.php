@@ -49,12 +49,12 @@ final class InstallCatalogTest extends TestCase
         $this->assertStringContainsString('http', $phpmd->caveat->link);
     }
 
-    public function test_psalm_delegates_config_creation_to_its_own_init(): void
+    public function test_psalm_scaffolds_a_laravel_sane_config(): void
     {
         $psalm = InstallCatalog::recipeFor('psalm');
 
-        $this->assertSame(['--init'], $psalm->initArgs);
-        $this->assertNull($psalm->configFile, 'psalm --init writes its own config; nothing to scaffold');
+        $this->assertSame('psalm.xml', $psalm->configFile);
+        $this->assertNull($psalm->initArgs, 'psalm.xml is scaffolded directly, not via --init');
     }
 
     public function test_the_test_runner_recipe_is_chosen_by_name(): void
