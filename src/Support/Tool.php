@@ -7,11 +7,9 @@ namespace PdxApps\Preflight\Support;
 /**
  * Declares the external executable a step needs, and how to locate it.
  *
- * A tool is one of three kinds: a project dependency under `vendor/bin` (the common case), a
- * system binary resolved on the PATH (`php`, `composer`), or a Composer plugin invoked as a
- * `composer <subcommand>` whose availability is the presence of its installed package. The
- * optional require hint powers the "install this" message surfaced by `doctor` and graceful
- * missing-tool skips.
+ * A tool is one of two kinds: a project dependency under `vendor/bin` (the common case) or a
+ * system binary resolved on the PATH (`php`, `composer`). The optional require hint powers the
+ * "install this" message surfaced by `doctor` and graceful missing-tool skips.
  */
 final readonly class Tool
 {
@@ -19,7 +17,6 @@ final readonly class Tool
         public string $binary,
         public bool $inVendorBin,
         public ?string $requireHint,
-        public ?string $pluginPackage = null,
     ) {
     }
 
@@ -31,16 +28,6 @@ final readonly class Tool
     public static function system(string $binary, ?string $requireHint = null): self
     {
         return new self($binary, false, $requireHint);
-    }
-
-    /**
-     * A Composer plugin invoked as `composer <subcommand>` (e.g. `composer normalize`). It
-     * runs through the `composer` binary, but is only available when its package is installed,
-     * so availability checks the package directory rather than a vendor/bin file.
-     */
-    public static function composerPlugin(string $package): self
-    {
-        return new self('composer', false, $package, $package);
     }
 
     /**

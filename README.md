@@ -160,12 +160,7 @@ These ship with Preflight but aren't in the default set — add them in `preflig
 
 | Step | Tool | Category | Check | Fix | Add with |
 |---|---|---|---|---|---|
-| `composer-normalize` | Composer Normalize | `composer.json` hygiene | ✓ | ✓ | `->withSteps([..., ComposerNormalize::class])` |
 | `deptrac` | Deptrac | Architecture boundaries | ✓ | | `->withSteps([..., Deptrac::class])` |
-
-`composer-normalize` runs the `ergebnis/composer-normalize` Composer plugin to keep
-`composer.json` sorted and consistently formatted. It's opt-in because it needs that plugin
-installed (`composer require --dev ergebnis/composer-normalize`).
 
 `deptrac` enforces architectural layer boundaries from a `deptrac.yaml` depfile; each
 violation is an error. It's opt-in because it only does something once you've defined an

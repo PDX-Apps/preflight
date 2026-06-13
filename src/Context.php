@@ -92,16 +92,11 @@ final readonly class Context
     }
 
     /**
-     * Whether the tool can actually be invoked. A Composer plugin is available when its
-     * package is installed; vendor-bin tools must exist on disk; system tools are assumed
-     * resolvable on the PATH.
+     * Whether the tool can actually be invoked. Vendor-bin tools must exist on disk; system
+     * tools are assumed resolvable on the PATH.
      */
     public function toolAvailable(Tool $tool): bool
     {
-        if ($tool->pluginPackage !== null) {
-            return is_dir(rtrim($this->projectRoot, '/') . '/vendor/' . $tool->pluginPackage);
-        }
-
         if (! $tool->inVendorBin) {
             return true;
         }

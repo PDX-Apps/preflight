@@ -133,7 +133,7 @@ final class ConfigurationBuilder
      * explicit {@see withSteps()} list — without re-listing it. Use this for "the defaults
      * plus a couple more", e.g. the opt-in steps:
      *
-     *     return Preflight::configure()->addSteps([ComposerNormalize::class, Deptrac::class]);
+     *     return Preflight::configure()->addSteps([Deptrac::class]);
      *
      * Each entry is a step class (defaults) or a configured instance, added in order after
      * the base set. A class already in the base keeps its position and instance; use

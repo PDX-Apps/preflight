@@ -218,23 +218,6 @@ These ship with Preflight but are **not** in the default set — add them in `pr
 with `->addSteps([TheStep::class])` (keeps the auto-detected defaults) or by listing them in
 `->withSteps([...])`. Each skips with an install hint if its tool isn't installed.
 
-### `composer-normalize` — Composer Normalize
-
-Keeps `composer.json` sorted and consistently formatted. **Check + fix.** Runs the
-`ergebnis/composer-normalize` Composer plugin; `--no-update-lock` keeps it off
-`composer.lock`.
-
-```bash
-composer require --dev ergebnis/composer-normalize
-```
-```php
-->addSteps([ComposerNormalize::class])
-```
-
-It's opt-in because it's a Composer **plugin** — installing it means allow-listing it to run
-code during composer operations, a decision you make deliberately (see
-[install §opt-in tools](install.md#opt-in-tools-arent-auto-installed)).
-
 ### `deptrac` — Deptrac
 
 Enforces architectural layer boundaries from a `deptrac.yaml` depfile. **Check only.** Each
@@ -260,7 +243,7 @@ paths):
 |---|---|---|
 | **Files** | pint, phpcs, phpstan, rector, psalm, test | Receives the exact changed files. |
 | **Paths** | phpmd | Changed files widened to their directories. |
-| **Whole** | composer-audit, composer-normalize, deptrac | Can't scope to a subset, so a narrowed run **skips** it (its concern isn't tied to which files changed). |
+| **Whole** | composer-audit, deptrac | Can't scope to a subset, so a narrowed run **skips** it (its concern isn't tied to which files changed). |
 
 On a whole-project run (no scope flags), every step uses its own configured scope — which is
 why a scaffolded `phpstan.neon`/`phpcs.xml`/`rector.php` needs its own paths.

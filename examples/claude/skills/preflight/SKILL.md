@@ -77,7 +77,7 @@ Verify your PHP changes before reporting done. Work in a loop until the checks p
 - `--files=a.php,b.php` — an explicit comma-separated list. Positional paths work too: `preflight app/ tests/Unit/Foo.php`.
 - `--module=Billing` — scope to one module's `app`/`tests` (projects using `->withModules(...)`).
 
-  Whole-only steps (composer-audit, composer-normalize, deptrac) **skip** under any narrowed scope — their concern isn't tied to which files changed.
+  Whole-only steps (composer-audit, deptrac) **skip** under any narrowed scope — their concern isn't tied to which files changed.
 
 **Which steps** (run a subset of the pipeline, by step name — the names `preflight steps` prints)
 - `--only=phpstan,test` — run only these steps.
@@ -125,7 +125,7 @@ return Preflight::configure()
 | Method | Effect |
 |---|---|
 | `->withSteps([...])` | Set the exact steps **and order**. Items are `Foo::class` or `Foo::make()->...`. |
-| `->addSteps([...])` | Keep the auto-detected defaults and **append** (e.g. the opt-in `ComposerNormalize`/`Deptrac`). |
+| `->addSteps([...])` | Keep the auto-detected defaults and **append** (e.g. the opt-in `Deptrac`). |
 | `->tune(Foo::make()->...)` | Keep the defaults but reconfigure one step. |
 | `->without(Foo::class)` | Drop one default step. |
 

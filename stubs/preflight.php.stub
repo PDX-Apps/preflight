@@ -7,7 +7,7 @@ use PdxApps\Preflight\Preflight;
 // Uncomment to reference any built-in step below:
 // use PdxApps\Preflight\Steps\{Pint, Phpcs, Phpstan, Rector, Psalm, Phpmd, ComposerAudit, Tests};
 // Opt-in steps (not auto-detected — add them explicitly with ->addSteps()):
-// use PdxApps\Preflight\Steps\{ComposerNormalize, Deptrac};
+// use PdxApps\Preflight\Steps\Deptrac;
 
 // With no steps listed, Preflight auto-detects every installed built-in tool and runs them in
 // order — Pint, Phpcs, Phpstan, Rector, Psalm, Phpmd, ComposerAudit, Tests — each only if its
@@ -28,9 +28,9 @@ return Preflight::configure();
 //         Tests::make()->before(['php', 'artisan', 'config:clear']),
 //     ]);
 
-// Keep the auto-detected defaults and append the opt-in steps (need their tools/config):
+// Keep the auto-detected defaults and append an opt-in step (needs its tool/config):
 // return Preflight::configure()
-//     ->addSteps([ComposerNormalize::class, Deptrac::class]);
+//     ->addSteps([Deptrac::class]);
 
 // Coverage — emit reports and gate on them (needs a driver: PCOV or Xdebug):
 // return Preflight::configure()

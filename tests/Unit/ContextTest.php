@@ -117,18 +117,6 @@ final class ContextTest extends TestCase
         $this->assertTrue($context->toolAvailable(Tool::system('composer')));
     }
 
-    public function test_a_composer_plugin_is_available_only_when_its_package_is_installed(): void
-    {
-        $project = new TempProject();
-        $context = $this->context($project->root);
-        $plugin = Tool::composerPlugin('ergebnis/composer-normalize');
-
-        $this->assertFalse($context->toolAvailable($plugin));
-
-        $project->file('vendor/ergebnis/composer-normalize/composer.json', '{}');
-        $this->assertTrue($context->toolAvailable($plugin));
-    }
-
     public function test_it_exposes_the_target_set_and_path_args_for_a_targeting(): void
     {
         $targets = TargetSet::narrowed([

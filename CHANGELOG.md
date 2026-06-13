@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-13
+
+### Removed
+
+- **Dropped the `composer-normalize` step (breaking).** The `ComposerNormalize` step and its
+  parser are gone, along with the `Tool::composerPlugin()` factory and the Composer-plugin
+  availability path that only it used. `ergebnis/composer-normalize` is a Composer **plugin**,
+  so using it means allow-listing code to run on every `composer install`/`update` and pulling
+  a chain of `ergebnis/*` packages into the tree — a supply-chain surface that isn't worth it
+  for sorting `composer.json`. Deptrac (a plain binary, no install-time code execution) remains
+  the one opt-in step. If you relied on it, drop `ComposerNormalize::class` from your
+  `preflight.php` and run `composer normalize` directly, or pin to `^0.1`.
+
 ## [0.1.6] - 2026-06-13
 
 ### Fixed
@@ -173,7 +186,8 @@ Initial release — a framework-agnostic, AI/CI-native code-quality runner for P
 - **`init` / `steps` commands** — scaffold a `preflight.php` and list the configured
   steps with their availability.
 
-[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/PDX-Apps/preflight/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/PDX-Apps/preflight/compare/v0.1.6...v0.2.0
 [0.1.6]: https://github.com/PDX-Apps/preflight/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/PDX-Apps/preflight/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/PDX-Apps/preflight/compare/v0.1.3...v0.1.4

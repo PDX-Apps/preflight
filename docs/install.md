@@ -129,13 +129,10 @@ run. If anything's still missing it points you back here.
 
 ## Opt-in tools aren't auto-installed
 
-[Optional steps](steps.md#optional-built-in-steps) like `composer-normalize` and `deptrac`
-aren't part of `install` — you add them deliberately. The reason is the
-[no-silent-mutation rule](configuration.md): `composer-normalize` is a Composer **plugin**,
-and allow-listing a plugin grants it permission to run code during every `composer install`.
-That's a security decision you should make yourself:
+[Optional steps](steps.md#optional-built-in-steps) like `deptrac` aren't part of `install` —
+you add them deliberately, because they only do something once you've defined the thing they
+check (Deptrac needs a `deptrac.yaml` depfile describing your architecture):
 
 ```bash
-composer require --dev ergebnis/composer-normalize
 composer require --dev deptrac/deptrac
 ```

@@ -34,7 +34,6 @@
     "require-dev": {
         "brianium/paratest": "^7.0",
         "deptrac/deptrac": "^4",
-        "ergebnis/composer-normalize": "^2",
         "laravel/pint": "^1.29",
         "phpmd/phpmd": "3.x-dev",
         "phpstan/phpstan": "^2.0",
@@ -59,9 +58,6 @@
         "bin/preflight"
     ],
     "config": {
-        "allow-plugins": {
-            "ergebnis/composer-normalize": true
-        },
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true

@@ -28,7 +28,7 @@ return Preflight::configure()
 | Method | Effect |
 |---|---|
 | `->withSteps([...])` | Set the exact steps **and order**. Items are `Foo::class` (defaults) or `Foo::make()->...` (configured). Omit entirely to auto-detect every installed default. |
-| `->addSteps([...])` | Keep the base set (defaults or `withSteps`) and **append** extra steps — e.g. the opt-in `ComposerNormalize`/`Deptrac` — without re-listing it. |
+| `->addSteps([...])` | Keep the base set (defaults or `withSteps`) and **append** extra steps — e.g. the opt-in `Deptrac` — without re-listing it. |
 | `->tune(Step)` | Keep the auto-detected default set but reconfigure one step. |
 | `->without(Foo::class)` | Drop one step from the default set (by class). |
 | `->only([...])` | Run only these steps, by **name** (e.g. `['phpstan', 'test']`). CLI: `--only`. |
@@ -182,8 +182,6 @@ A `Tool` is one of three kinds:
 - `Tool::vendorBin('phpstan', 'phpstan/phpstan')` — a `vendor/bin` binary (available when the
   file exists).
 - `Tool::system('composer')` — a binary on `PATH` (always available).
-- `Tool::composerPlugin('ergebnis/composer-normalize')` — a `composer <subcommand>` plugin
-  (available when its package is installed).
 
 For findings (rather than a pass/fail exit code), return a `StepPlan::command(...)
 ->parseWith(new YourParser(...))` whose parser turns the tool's output into `Finding`s. The

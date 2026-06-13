@@ -42,14 +42,4 @@ final class ToolTest extends TestCase
 
         $this->assertSame('php', $tool->resolvePath('/project'));
     }
-
-    public function test_a_composer_plugin_runs_through_composer_and_tracks_its_package(): void
-    {
-        $tool = Tool::composerPlugin('ergebnis/composer-normalize');
-
-        $this->assertSame('composer', $tool->binary);
-        $this->assertSame('composer', $tool->resolvePath('/project'));
-        $this->assertSame('ergebnis/composer-normalize', $tool->requireHint);
-        $this->assertSame('ergebnis/composer-normalize', $tool->pluginPackage);
-    }
 }
