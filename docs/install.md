@@ -91,7 +91,7 @@ For each tool it installs, `install` writes a sensible starter config (skip with
 | Pint | `pint.json` | `laravel` preset |
 | PHP_CodeSniffer | `phpcs.xml` | PSR-12 + your source dirs |
 | PHPStan | `phpstan.neon` | level 5 + your source dirs |
-| Rector | `rector.php` | `withPhpSets()` over your source dirs |
+| Rector | `rector.php` | `withPhpSets()` over your source dirs, skipping the PHP 8.5 property-`#[\Override]` rule (Psalm rejects it) |
 | PHPMD | `phpmd.xml` | a starter ruleset |
 | Psalm | — | delegated to `psalm --init` (it scans and picks a baseline) |
 

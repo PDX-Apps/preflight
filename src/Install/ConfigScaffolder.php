@@ -7,15 +7,25 @@ namespace PdxApps\Preflight\Install;
 /**
  * Generates starter config-file content for the tools the install command sets up.
  *
- * Content is generated (not copied from static stubs) because the analysers need real source
- * paths: on a whole-project run each tool reads its own config for what to scan, so a
- * scaffolded config must point at directories that actually exist. {@see sourcePaths()}
- * detects them; configs that don't take paths (pint, phpmd) are static.
+ * Each config maps to a stub under `stubs/configs/`. Tools whose config must list real
+ * directories (phpstan, phpcs, rector) carry a `{{ paths }}`/`{{ files }}` token that's
+ * filled from the project's actual source dirs ({@see sourcePaths()}); the rest are copied
+ * verbatim. Keeping the templates as real files — not inline heredocs — makes them lintable
+ * and free of string-escaping.
  */
 final readonly class ConfigScaffolder
 {
     /** Candidate source directories, in the order they should appear when present. */
     private const array CANDIDATE_DIRS = ['app', 'src', 'tests'];
+
+    /** Config filename => the stub that backs it, relative to the stubs/configs dir. */
+    private const array STUBS = [
+        'phpstan.neon' => 'phpstan.neon.stub',
+        'phpcs.xml' => 'phpcs.xml.stub',
+        'rector.php' => 'rector.php.stub',
+        'pint.json' => 'pint.json.stub',
+        'phpmd.xml' => 'phpmd.xml.stub',
+    ];
 
     public function __construct(private string $projectRoot)
     {
@@ -41,79 +51,42 @@ final readonly class ConfigScaffolder
      */
     public function contentsFor(string $file): ?string
     {
-        return match ($file) {
-            'phpstan.neon' => $this->phpstanNeon(),
-            'phpcs.xml' => $this->phpcsXml(),
-            'rector.php' => $this->rectorPhp(),
-            'pint.json' => $this->pintJson(),
-            'phpmd.xml' => $this->phpmdXml(),
-            default => null,
+        $stub = self::STUBS[$file] ?? null;
+        if ($stub === null) {
+            return null;
+        }
+
+        $template = (string) file_get_contents($this->stubDir() . '/' . $stub);
+
+        return strtr($template, [
+            '{{ paths }}' => $this->pathList($file),
+            '{{ files }}' => $this->fileList(),
+        ]);
+    }
+
+    /** Format the source paths the way the given config expects, one per line. */
+    private function pathList(string $file): string
+    {
+        $format = match ($file) {
+            'phpstan.neon' => static fn (string $p): string => '        - ' . $p,
+            'rector.php' => static fn (string $p): string => "        __DIR__ . '/" . $p . "',",
+            default => static fn (string $p): string => $p,
         };
+
+        return implode("\n", array_map($format, $this->sourcePaths()));
     }
 
-    private function phpstanNeon(): string
+    /** PHPCS lists source dirs as `<file>` elements. */
+    private function fileList(): string
     {
-        $paths = implode("\n", array_map(static fn (string $p): string => '        - ' . $p, $this->sourcePaths()));
-
-        return "parameters:\n    level: 5\n    paths:\n" . $paths . "\n";
+        return implode("\n", array_map(
+            static fn (string $p): string => '    <file>' . $p . '</file>',
+            $this->sourcePaths(),
+        ));
     }
 
-    private function phpcsXml(): string
+    private function stubDir(): string
     {
-        $files = implode("\n", array_map(static fn (string $p): string => '    <file>' . $p . '</file>', $this->sourcePaths()));
-
-        return <<<XML
-            <?xml version="1.0"?>
-            <ruleset name="App">
-                <rule ref="PSR12"/>
-            {$files}
-            </ruleset>
-
-            XML;
-    }
-
-    private function rectorPhp(): string
-    {
-        $paths = implode("\n", array_map(static fn (string $p): string => "        __DIR__ . '/" . $p . "',", $this->sourcePaths()));
-
-        return <<<PHP
-            <?php
-
-            declare(strict_types=1);
-
-            use Rector\\Config\\RectorConfig;
-
-            return RectorConfig::configure()
-                ->withPaths([
-            {$paths}
-                ])
-                ->withPhpSets();
-
-            PHP;
-    }
-
-    private function pintJson(): string
-    {
-        return <<<'JSON'
-            {
-                "preset": "laravel"
-            }
-
-            JSON;
-    }
-
-    private function phpmdXml(): string
-    {
-        return <<<'XML'
-            <?xml version="1.0"?>
-            <ruleset name="App"
-                xmlns="http://pmd.sf.net/ruleset/1.0.0">
-                <rule ref="rulesets/cleancode.xml"/>
-                <rule ref="rulesets/codesize.xml"/>
-                <rule ref="rulesets/naming.xml"/>
-                <rule ref="rulesets/unusedcode.xml"/>
-            </ruleset>
-
-            XML;
+        return dirname(__DIR__, 2) . '/stubs/configs';
     }
 }

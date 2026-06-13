@@ -67,6 +67,10 @@ final class ConfigScaffolderTest extends TestCase
         $this->assertNotNull($content);
         $this->assertStringContainsString('RectorConfig', $content);
         $this->assertStringContainsString("/src", $content);
+        // The PHP 8.5 property-override rule emits #[\Override] on properties, which Psalm
+        // rejects — so the default must skip it to keep the tool set self-consistent.
+        $this->assertStringContainsString('AddOverrideAttributeToOverriddenPropertiesRector', $content);
+        $this->assertStringContainsString('->withSkip([', $content);
     }
 
     public function test_pint_and_phpmd_have_static_content(): void

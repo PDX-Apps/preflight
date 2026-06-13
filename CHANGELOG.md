@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-12
+
 ### Added
 
 - **`--only` / `--skip` step selection.** Run a subset of the pipeline by step name without
@@ -32,6 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selection, `exclude()`, per-step options, coverage gates, `forAgents()`), not just the
   fix/check loop. The skill points at `docs/configuration.md` and `docs/steps.md` for the
   exhaustive reference.
+- **Config scaffolds moved to stub files.** `install`'s starter configs now live as real,
+  lintable templates under `stubs/configs/` instead of inline PHP heredocs. Static configs
+  (`pint.json`, `phpmd.xml`) are copied verbatim; the ones that must list source dirs
+  (`phpstan.neon`, `phpcs.xml`, `rector.php`) carry a `{{ paths }}`/`{{ files }}` token filled
+  from the detected dirs. Generated output is unchanged.
+
+### Fixed
+
+- **Default `rector.php` no longer fights Psalm.** The scaffolded Rector config now skips
+  `AddOverrideAttributeToOverriddenPropertiesRector` — the PHP 8.5 rule that stamps
+  `#[\Override]` onto overridden *properties*, which is invalid (the attribute is method-only)
+  and which Psalm rejects as `InvalidAttribute`. `#[\Override]` on overridden *methods* stays,
+  since Psalm requires it. A fresh install's default tool set is now self-consistent.
 
 ## [0.1.3] - 2026-06-07
 

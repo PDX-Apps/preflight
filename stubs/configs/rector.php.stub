@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+use Rector\Php85\Rector\Property\AddOverrideAttributeToOverriddenPropertiesRector;
+
+return RectorConfig::configure()
+    ->withPaths([
+{{ paths }}
+    ])
+    ->withPhpSets()
+    // PHP 8.5's property variant stamps #[\Override] onto overridden
+    // *properties*, which is invalid (the attribute is method-only) and Psalm
+    // rejects it. Skip only that rule; #[\Override] on overridden *methods*
+    // stays — Psalm requires it and it guards against silently-broken
+    // overrides on framework upgrades.
+    ->withSkip([
+        AddOverrideAttributeToOverriddenPropertiesRector::class,
+    ]);
